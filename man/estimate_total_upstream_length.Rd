@@ -5,8 +5,8 @@
 \title{Title Estimate the total length (in meters) of stream upstream of a spatial point or stream (identified by FWA_WATERSHED_CODE)}
 \usage{
 estimate_total_upstream_length(
-  point = NULL,
-  fwa_code = NULL,
+  obstacles = NULL,
+  max_buffer_dist = 50,
   keep_streams_separate = F,
   make_plot = F,
   save_plot = F,
@@ -14,15 +14,15 @@ estimate_total_upstream_length(
 )
 }
 \arguments{
-\item{point}{An {sf} table that describes one or more points that intersect with streams in B.C.}
-
-\item{fwa_code}{A character string, or vector of character strings, that are FWA_WATERSHED_CODES (consult Freshwater Atlas User Guide if this is unfamiliar to you)}
-
 \item{keep_streams_separate}{If true, result table retains streams as rows and just adds a new column that is total length (in m); if false, just returns estimate length.}
 
 \item{make_plot}{If true, will make a simple ggplot figure.}
 
 \item{save_plot_location}{Where to save the above plot to?}
+
+\item{point}{An {sf} table that describes one or more points that intersect with streams in B.C.}
+
+\item{fwa_code}{A character string, or vector of character strings, that are FWA_WATERSHED_CODES (consult Freshwater Atlas User Guide if this is unfamiliar to you)}
 }
 \value{
 The total length of streams upstream of a point or stream; if a point is used, the portion of the stream it rests on will be added to this estimate.

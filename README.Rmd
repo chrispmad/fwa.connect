@@ -7,6 +7,7 @@ output: github_document
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
+  warning = FALSE,
   comment = "#>",
   fig.path = "man/figures/README-",
   out.width = "100%"
@@ -40,6 +41,7 @@ Let's say we wanted to find all streams above a certain point in space, e.g. a b
 library(fwa.connect)
 library(bcdata) # To access datasets in the open-source BC Data Catalogue
 library(sf)
+library(progress)
 
 # Download a possible fish barrier from the PSCIS dataset.
 fp = bcdc_query_geodata("pscis-assessments") |> 
@@ -48,11 +50,34 @@ fp = bcdc_query_geodata("pscis-assessments") |>
          ROAD_NAME == 'Warren Road') |>
   collect()
 
-# Find the nearest stream within 20 meters.
-stream = find_nearest_stream(fp, max_buffer_dist = 20)
+# Find the nearest stream within 50 meters.
+stream = find_nearest_stream(fp, max_buffer_dist = 50)
 
 # Calculate the summed length of all streams upstream from a point (or a FWA code)
-upstream_l = estimate_total_upstream_length(point = fp,
-                               make_plot = T,
-                               save_plot = T)
+upstream_l = estimate_total_upstream_length(obstacles = fp,
+                                            make_plot = T,
+                                            save_plot = T)
+
+# Calculate the length for multiple points.
+fps = bcdata::bcdc_query_geodata("pscis-assessments") |>
+  bcdata::filter(ASSESSMENT_DATE > as.Date('2020-10-01') & ASSESSMENT_DATE < as.Date('2021-01-01')) |> 
+  bcdata::collect()
+
+upstream_lengths = estimate_total_upstream_length(
+  obstacles = fps,
+  make_plot = F,
+  save_plot = F
+)
+
+p = upstream_lengths |> 
+  dplyr::mutate(id_label = stringr::str_extract(id, '.{4}$')) |> 
+  ggplot2::ggplot() + 
+  ggplot2::geom_col(ggplot2::aes(
+    x = reorder(id_label, -total_length_m), 
+    y = total_length_m,
+    label = total_length_m)) + 
+  ggplot2::labs(y = 'Total Length (m)',
+                x = 'ID')
+
+plotly::ggplotly(p, tooltip = c('label'))
 ```

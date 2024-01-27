@@ -17,6 +17,11 @@ Depends:
     R (>= 2.10)
 LazyData: true
 Imports: 
+    bcdata,
+    bcmaps,
     data.table,
     igraph,
+    progress,
     tidygraph
+Enhances: 
+    plotly

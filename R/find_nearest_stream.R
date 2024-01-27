@@ -25,7 +25,10 @@ find_nearest_stream = function(point, max_buffer_dist = 50){
   names(stream_dl)[ncol(stream_dl)] <- 'geometry'
 
   # Search BC Data Catalogue for nearest stream within max buffer distance
-  stream_dl |>
-    dplyr::mutate(dist_to_point = as.numeric(sf::st_distance(geometry, point))) |>
-    dplyr::slice_min(dist_to_point)
+  if(nrow(stream_dl) > 1){
+    stream_dl = stream_dl |>
+      dplyr::mutate(dist_to_point = as.numeric(sf::st_distance(geometry, point))) |>
+      dplyr::slice_min(dist_to_point)
+  }
+  return(stream_dl)
 }

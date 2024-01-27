@@ -3,7 +3,8 @@
 #' @param point Point to search with
 #' @param max_buffer_dist How far to look for stream, in meters
 #'
-#' @return
+#' @return A single stream in an {sf} table
+#' @export
 #'
 #' @examples \dontrun
 find_nearest_stream = function(point, max_buffer_dist = 50){

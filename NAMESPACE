@@ -2,5 +2,6 @@
 
 export(add_attr_to_graph)
 export(estimate_total_upstream_length)
+export(find_nearest_stream)
 export(fwa_graph)
 export(get_upstream_fwa_codes)

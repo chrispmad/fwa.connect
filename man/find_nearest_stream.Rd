@@ -11,6 +11,9 @@ find_nearest_stream(point, max_buffer_dist = 50)
 
 \item{max_buffer_dist}{How far to look for stream, in meters}
 }
+\value{
+A single stream in an {sf} table
+}
 \description{
 Title Find nearest stream to a given point
 }

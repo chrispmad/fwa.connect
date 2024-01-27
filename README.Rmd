@@ -51,10 +51,10 @@ fp = bcdc_query_geodata("pscis-assessments") |>
   collect()
 
 # Find the nearest stream within 50 meters.
-stream = find_nearest_stream(fp, max_buffer_dist = 50)
+stream = fwa.connect::find_nearest_stream(fp, max_buffer_dist = 50)
 
 # Calculate the summed length of all streams upstream from a point (or a FWA code)
-upstream_l = estimate_total_upstream_length(obstacles = fp,
+upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
                                             make_plot = T,
                                             save_plot = T)
 

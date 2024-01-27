@@ -1,3 +1,11 @@
+#' Title Find nearest stream to a given point
+#'
+#' @param point Point to search with
+#' @param max_buffer_dist How far to look for stream, in meters
+#'
+#' @return
+#'
+#' @examples \dontrun
 find_nearest_stream = function(point, max_buffer_dist = 50){
   is_spatial = tryCatch(!is.null(sf::st_geometry(point)),
                        error = function(e) FALSE)

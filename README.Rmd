@@ -1,5 +1,5 @@
 ---
-output: github_document
+output: html_document
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -8,10 +8,12 @@ output: github_document
 knitr::opts_chunk$set(
   collapse = TRUE,
   warning = FALSE,
+  fig.width = 6,
+  fig.height = 5,
+  fig.align = 'center',
   comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
-)
+  fig.path = "man/figures/README-"
+  )
 ```
 
 # fwa.connect
@@ -37,7 +39,7 @@ remotes::install_github('chrispmad/fwa.connect')
 
 Let's say we wanted to find all streams above a certain point in space, e.g. a barrier to fish passage:
 
-```{r example}
+```{r single_point_example, include = T}
 library(fwa.connect)
 library(bcdata) # To access datasets in the open-source BC Data Catalogue
 library(sf)
@@ -56,8 +58,14 @@ stream = fwa.connect::find_nearest_stream(fp, max_buffer_dist = 50)
 # Calculate the summed length of all streams upstream from a point (or a FWA code)
 upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
                                             make_plot = T,
-                                            save_plot = T)
+                                            save_plot = F)
 
+knitr::kable(
+  upstream_l 
+)
+```
+
+```{r multiple_points_example, include = T}
 # Calculate the length for multiple points.
 fps = bcdata::bcdc_query_geodata("pscis-assessments") |>
   bcdata::filter(ASSESSMENT_DATE > as.Date('2020-10-01') & ASSESSMENT_DATE < as.Date('2021-01-01')) |> 
@@ -69,6 +77,12 @@ upstream_lengths = estimate_total_upstream_length(
   save_plot = F
 )
 
+knitr::kable(
+  upstream_lengths
+)
+```
+
+```{r example_as_plot, include = T}
 p = upstream_lengths |> 
   dplyr::mutate(id_label = stringr::str_extract(id, '.{4}$')) |> 
   ggplot2::ggplot() + 
@@ -79,5 +93,5 @@ p = upstream_lengths |>
   ggplot2::labs(y = 'Total Length (m)',
                 x = 'ID')
 
-plotly::ggplotly(p, tooltip = c('label'))
+p
 ```

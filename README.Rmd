@@ -43,14 +43,15 @@ remotes::install_github('chrispmad/fwa.connect')
 
 A two-column table from which an {igraph} / {tidygraph} graph object can be derived. The first column represents the FWA_WATERSHED_CODE (near-unique ID column) of a target stream in the FWA ('upstream_fwa_code'), the second represents the FWA_WATERSHED_CODE of the stream downstream of the target stream.
 ```{r raw_data_table}
-knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl))
+knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl, 2))
 ```
 
 ### fwa_graph
 
 This function takes the included dataset described above and turns it into a {tidygraph} graph object.
 ```{r fwa_graph}
-if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
+if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. 
+# Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
 ```
 
 ### trace_course_downstream
@@ -67,7 +68,7 @@ ds = fwa.connect::trace_course_downstream(fwa_code = fwa_code,
                         save_plot = F,
                         save_plot_location = NA)
 
-knitr::kable(head(ds$downstream_course))
+knitr::kable(head(ds$downstream_course, 2))
 
 ds$plot
 ```
@@ -85,7 +86,7 @@ us = fwa.connect::trace_course_upstream(fwa_code = fwa_code,
                         save_plot = F,
                         save_plot_location = NA)
 
-knitr::kable(head(us$upstream_streams))
+knitr::kable(head(us$upstream_streams, 2))
 
 us$plot
 ```
@@ -102,11 +103,11 @@ Estimate the summed lengths of all streams above a certain point in space, e.g. 
 # library(progress)
 
 # Download a possible fish barrier from the PSCIS dataset.
-fp = bcdc_query_geodata("pscis-assessments") |> 
-  filter(RESPONSIBLE_PARTY_NAME == 'WEST FRASER MILLS LTD.',
+fp = bcdata::bcdc_query_geodata("pscis-assessments") |> 
+  bcdata::filter(RESPONSIBLE_PARTY_NAME == 'WEST FRASER MILLS LTD.',
          STREAM_NAME == 'Nass River',
          ROAD_NAME == 'Warren Road') |>
-  collect()
+  bcdata::collect()
 
 # Find the nearest stream within 50 meters.
 stream = fwa.connect::find_nearest_stream(fp, max_buffer_dist = 50)

@@ -42,17 +42,13 @@ be derived. The first column represents the FWA_WATERSHED_CODE
 the stream downstream of the target stream.
 
 ``` r
-knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl))
+knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl, 2))
 ```
 
 | upstream_fwa_code                                                                                                                               | downstream_fwa_code                                                                                                                             |
 |:------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------|
 | 100-000025-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
 | 100-000061-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
-| 100-000061-136148-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000061-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
-| 100-000160-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
-| 100-000239-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
-| 100-000510-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
 
 ### fwa_graph
 
@@ -60,7 +56,8 @@ This function takes the included dataset described above and turns it
 into a {tidygraph} graph object.
 
 ``` r
-if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
+if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. 
+# Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
 ```
 
 ### trace_course_downstream
@@ -85,17 +82,13 @@ ds = fwa.connect::trace_course_downstream(fwa_code = fwa_code,
 #> [1] "working on stream juncture 4 of 4"
 #> bc_bound_hres was updated on 2023-04-11
 
-knitr::kable(head(ds$downstream_course))
+knitr::kable(head(ds$downstream_course, 2))
 ```
 
 | WATERSHED_GROUP_ID | BLUE_LINE_KEY | WATERSHED_KEY | FWA_WATERSHED_CODE                                                                                                                              | WATERSHED_GROUP_CODE | GNIS_ID | GNIS_NAME   | LEFT_RIGHT_TRIBUTARY | BLUE_LINE_KEY_50K | WATERSHED_CODE_50K                            | WATERSHED_KEY_50K | WATERSHED_GROUP_CODE_50K | GRADIENT | LENGTH_METRE | DOWNSTREAM_ROUTE_MEASURE | STREAM_MAGNITUDE | STREAM_ORDER | geometry                     |
 |:-------------------|:--------------|:--------------|:------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------|:--------|:------------|:---------------------|:------------------|:----------------------------------------------|:------------------|:-------------------------|:---------|-------------:|-------------------------:|-----------------:|-------------:|:-----------------------------|
-| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | 541               | 230000000000000000000000000000000000000000000 | 541               | LPCE                     | NA       |  53153.94676 |                1584683.9 |           198320 |            9 | MULTILINESTRING ((1336075 1… |
-| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | NA                | NA                                            | NA                | NA                       | NA       |     53.26028 |                1584864.8 |           157451 |            9 | LINESTRING (1324634 1253054… |
-| 164                | 359001899     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | PARA                 | NA      | NA          | LEFT                 | 307               | 230000000000000000000000000000000000000000000 | 307               | PARA                     | NA       | 229301.14271 |                 235435.9 |            32543 |            9 | MULTILINESTRING ((1146220 1… |
-| 167                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | PCEA                 | NA      | NA          | LEFT                 | 660               | 230000000000000000000000000000000000000000000 | 660               | PCEA                     | NA       | 120921.03979 |                1826659.6 |           133227 |            9 | MULTILINESTRING ((1173921 1… |
-| 167                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | PCEA                 | NA      | NA          | LEFT                 | NA                | NA                                            | NA                | NA                       | NA       |     87.39870 |                1724069.0 |           133009 |            9 | MULTILINESTRING ((1223980 1… |
-| 235                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | UPCE                 | 14619   | Peace River | LEFT                 | 1123              | 230000000000000000000000000000000000000000000 | 1123              | UPCE                     | NA       | 121820.31415 |                1706109.9 |           157451 |            9 | MULTILINESTRING ((1277349 1… |
+| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | 541               | 230000000000000000000000000000000000000000000 | 541               | LPCE                     | NA       |  53153.94676 |                  1584684 |           198320 |            9 | MULTILINESTRING ((1336075 1… |
+| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | NA                | NA                                            | NA                | NA                       | NA       |     53.26028 |                  1584865 |           157451 |            9 | LINESTRING (1324634 1253054… |
 
 ``` r
 
@@ -118,17 +111,13 @@ us = fwa.connect::trace_course_upstream(fwa_code = fwa_code,
                         save_plot_location = NA)
 #> [1] "Merging stream geometries by BLUE_LINE_KEY and a handful of other columns."
 
-knitr::kable(head(us$upstream_streams))
+knitr::kable(head(us$upstream_streams, 2))
 ```
 
 | WATERSHED_GROUP_ID | BLUE_LINE_KEY | WATERSHED_KEY | FWA_WATERSHED_CODE                                                                                                                              | WATERSHED_GROUP_CODE | GNIS_ID | GNIS_NAME | LEFT_RIGHT_TRIBUTARY | STREAM_MAGNITUDE | BLUE_LINE_KEY_50K | WATERSHED_CODE_50K | WATERSHED_KEY_50K | WATERSHED_GROUP_CODE_50K | GRADIENT | LENGTH_METRE | DOWNSTREAM_ROUTE_MEASURE | STREAM_ORDER | geometry                     |
 |-------------------:|--------------:|--------------:|:------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------|:--------|:----------|:---------------------|-----------------:|------------------:|:-------------------|------------------:|:-------------------------|:---------|-------------:|-------------------------:|-------------:|:-----------------------------|
 |                 50 |     359006292 |     359553059 | 200-948755-999851-274772-093336-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | LEFT                 |                1 |                NA | NA                 |                NA | NA                       | NA       |     392.6911 |                 10.03823 |            1 | MULTILINESTRING ((1036038 1… |
 |                 50 |     359033242 |     359033242 | 200-948755-999851-274772-093336-012332-516017-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | RIGHT                |                1 |                NA | NA                 |                NA | NA                       | NA       |     471.3533 |                  0.00000 |            1 | LINESTRING (1036589 1373282… |
-|                 50 |     359043957 |     359043957 | 200-948755-999851-274772-093336-684544-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | LEFT                 |                1 |                NA | NA                 |                NA | NA                       | NA       |     797.1840 |                  0.00000 |            1 | LINESTRING (1041561 1372794… |
-|                 50 |     359054594 |     359054594 | 200-948755-999851-274772-093336-482800-724036-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | RIGHT                |                1 |                NA | NA                 |                NA | NA                       | NA       |     354.5949 |                  0.00000 |            1 | LINESTRING (1043315 1370941… |
-|                 50 |     359058073 |     359058073 | 200-948755-999851-274772-093336-482800-909595-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | RIGHT                |                1 |                NA | NA                 |                NA | NA                       | NA       |     357.3189 |                  0.00000 |            1 | LINESTRING (1043836 1371694… |
-|                 50 |     359070870 |     359070870 | 200-948755-999851-274772-093336-482800-587583-474788-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | RIGHT                |                1 |                NA | NA                 |                NA | NA                       | NA       |     358.7212 |                  0.00000 |            1 | LINESTRING (1043199 1370128… |
 
 ``` r
 
@@ -176,9 +165,9 @@ knitr::kable(
 )
 ```
 
-| total_length_m | id                                                           | search_outcome               |
-|---------------:|:-------------------------------------------------------------|:-----------------------------|
-|          13908 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-59aac225_18d52ee4101_3c3d | stream(s) found and measured |
+| total_length_m | id                                                             | search_outcome               |
+|---------------:|:---------------------------------------------------------------|:-----------------------------|
+|          13908 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-3e6b80c7_18d52f29df9\_-14de | stream(s) found and measured |
 
 #### Multiple points
 
@@ -200,16 +189,16 @@ knitr::kable(
 )
 ```
 
-| total_length_m | id                                                             | search_outcome               |
-|---------------:|:---------------------------------------------------------------|:-----------------------------|
-|           4386 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2187 | stream(s) found and measured |
-|          30012 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2186 | stream(s) found and measured |
-|           8722 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2185 | stream(s) found and measured |
-|           6834 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2184 | stream(s) found and measured |
-|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2183 | stream(s) found and measured |
-|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2182 | stream(s) found and measured |
-|           9512 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2181 | stream(s) found and measured |
-|           4272 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-2180 | stream(s) found and measured |
-|           4028 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-217f | stream(s) found and measured |
-|            153 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-217e | stream(s) found and measured |
-|         111073 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid–3209cdce_18d52eeadea\_-217d | stream(s) found and measured |
+| total_length_m | id                                                          | search_outcome               |
+|---------------:|:------------------------------------------------------------|:-----------------------------|
+|           4386 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24a | stream(s) found and measured |
+|          30012 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24b | stream(s) found and measured |
+|           8722 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24c | stream(s) found and measured |
+|           6834 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24d | stream(s) found and measured |
+|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24e | stream(s) found and measured |
+|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24f | stream(s) found and measured |
+|           9512 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_250 | stream(s) found and measured |
+|           4272 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_251 | stream(s) found and measured |
+|           4028 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_252 | stream(s) found and measured |
+|            153 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_253 | stream(s) found and measured |
+|         111073 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_254 | stream(s) found and measured |

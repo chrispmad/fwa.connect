@@ -84,7 +84,7 @@ estimate_total_upstream_length = function(obstacles = NULL,
     if(is.null(cql_pattern)) next
 
     query_test = tryCatch(
-      bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
+      bcdata::bcdc_query_geodata('92344413-8035-4c08-b996-65a9b3f62fca') |>
         bcdata::select('FWA_WATERSHED_CODE','LENGTH_METRE') |>
         bcdata::filter(bcdata:::CQL(cql_pattern)),
       error = function(e) stop("Error: Looks like the BC Data Catalogue, or your connection to it, is not working.")
@@ -189,13 +189,13 @@ estimate_total_upstream_length = function(obstacles = NULL,
         ggplot2::geom_sf(data = inset_highlight_square, col = 'red', fill = 'transparent', size = 5) +
         ggplot2::theme(axis.text = ggplot2::element_blank(),
                        panel.background = ggplot2::element_rect(fill = 'transparent'),
-                       plot.background = ggplot2::element_rect(fill = 'transparent', color = 'white', size = 3),
+                       plot.background = ggplot2::element_rect(fill = 'transparent'),
                        panel.grid = ggplot2::element_blank(),
                        axis.ticks = ggplot2::element_blank()
         )
 
       # Add inset to plot.
-      library(patchwork)
+      suppressWarnings(requireNamespace('patchwork'))
       p = p + patchwork::inset_element(map_inset, left = 0, right = 0.3, top = 0.225, bottom = 0.025)
 
       print(p)

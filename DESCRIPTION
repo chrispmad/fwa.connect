@@ -21,6 +21,7 @@ Imports:
     bcmaps,
     data.table,
     igraph,
+    patchwork,
     progress,
     tidygraph
 Enhances: 

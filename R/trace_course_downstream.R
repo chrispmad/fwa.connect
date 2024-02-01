@@ -22,6 +22,10 @@ trace_course_downstream = function(fwa_code,
                                    save_plot = F,
                                    save_plot_location = NULL){
 
+  if(is.null(fwa_code)) stop("Error: FWA CODE is null; please enter one!")
+
+  if(!is.character(fwa_code)) stop("Error: FWA CODE must be a string, e.g. '100-239102-023910-...', etc")
+
   # If plot save location is provided, make_plot should be TRUE.
   if(!is.null(save_plot_location)) make_plot = T
 

@@ -1,4 +1,4 @@
-#' Title Get a list of all FWA WATERSHED CODE'ss that are upstream of target code
+#' Get a list of all FWA WATERSHED CODE'ss that are upstream of target code
 #'
 #' @param fwa_code Target FWA WATERSHED CODE
 #'

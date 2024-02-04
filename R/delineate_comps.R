@@ -2,7 +2,7 @@
 #'
 #' @param wbs Stream, river, lake, etc - it must have a FWA_WATERSHED_CODE column
 #'
-#' @return
+#' @return Returns input water body table with an additional column: comp_group
 #' @export
 #'
 #' @examples \dontrun

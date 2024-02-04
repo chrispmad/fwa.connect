@@ -9,6 +9,9 @@ delineate_comps(wbs)
 \arguments{
 \item{wbs}{Stream, river, lake, etc - it must have a FWA_WATERSHED_CODE column}
 }
+\value{
+Returns input water body table with an additional column: comp_group
+}
 \description{
 Delineate Component Groups
 }

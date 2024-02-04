@@ -3,38 +3,95 @@ title: "my_vignette"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{my_vignette}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  message = F,
+  warning = F
 )
 ```
 
-```{r}
-library(igraph)
-library(ggraph)
-library(bcdata)
-library(leaflet)
+## Foreward
 
+This package, {fwa.connect}, is intended to make your life easier when working with the British Columbia Freshwater Atlas (FWA); specifically, the stream network line layer and the lakes layer. These layers (and perhaps others in the FWA) share a column: the FWA_WATERSHED_CODE. This column is quite ingenious, as it succintly performs at least four functions:
+1. It serves as an (almost) unique ID column.
+2. For a given stream X, it describes how far down the 'receiving' stream Y the stream X joins onto stream Y.
+3. It implies how many streams or rivers away from the massive watershed scale collecting river a target stream is: e.g., a FWA code of 100-274173-283712-859301-000000... implies that our stream makes up a chain of four connected streams, including the massive collecting river (the '100', in this case).
+4. It can be used to generate a directed 'graph', which we can then use to quickly calculate useful graph attributes for each node (i.e. stream) in the graph, e.g. centrality, component membership (groups of nodes connected by at least one edge), betweenness, shortest path between two points, eccentricity, etc.
+
+## Grab Toy Dataset
+
+```{r get_toy_dataset}
+# ---------------
 # Get test points
+
+# Prince George Natural Resource District Polygon
 dpg = bcmaps::nr_districts() |>
   dplyr::filter(ORG_UNIT_NAME == 'Prince George Natural Resource District')
 
+# Potential barriers to fish movement in streams
 fps_DPG = bcdata::bcdc_query_geodata("pscis-assessments") |>
   bcdata::filter(INTERSECTS(dpg)) |>
   bcdata::filter(ASSESSMENT_DATE > as.Date('2023-09-01') & ASSESSMENT_DATE < as.Date('2024-12-31')) |>
   #bcdata::filter(CURRENT_BARRIER_RESULT_CODE = "BARRIER") |>
   bcdata::collect()
 
-# -----------------------------
-# Test for a single point #
-
+# Single barrier point
 fps_single = fps_DPG |>
   dplyr::filter(STREAM_CROSSING_ID == 198771)
+
+# Multiple (N = 100) barrier points
+fps_multi = sample(fps_DPG, size = 20, replace = F)
+```
+
+## Functions
+
+The principle functions of the {fwa.connect} package are as follows:
+### 1. FWA network graph object (*fwa_graph*)
+
+- packages the FWA stream network as a {tidygraph} graph object, i.e. a table of node data (streams, in this case; N = 1,523,261) and a table of edge data (connections between nodes; N = 1,522,833). This graph supports many subsequent functions and can be used by any savvy analyst that knows the basics of {igraph} and/or {tidygraph}.
+
+```{r}
+# fwa_graph()
+```
+
+### 2. Delineate Component Groups (*delineate_comps*)
+
+- Identifies the component membership of one or more FWA_WATERSHED_CODEs.
+
+```{r delineate_comps_example}
+# Just to ensure we have streams that are part of different groups, let's snag the geometries of three different streams around the province.
+stream_network_id = '92344413-8035-4c08-b996-65a9b3f62fca'
+
+some_streams = bcdata::bcdc_query_geodata(stream_network_id) |> 
+  bcdata::filter(GNIS_NAME %in% c("Paul River","Spius Creek","Taku River")) |> 
+  bcdata::collect()
+
+some_streams = delineate_comps(some_streams)
+
+library(ggplot2)
+
+ggplot() + 
+  geom_sf(data = bcmaps::bc_bound()) +
+  geom_sf(data = some_streams, aes(col = comp_group, fill = comp_group)) + 
+  ggthemes::theme_map() + 
+  labs(title = 'These three streams are part of separate graph components')
+```
+
+### 3. Find Nearest Stream (*find_nearest_stream*)
+
+- Finds the nearest stream for an {sf} POINT simple feature collection of 1 or more features.
+
+```{r nearest_stream_single_point_example}
+# -----------------------------
+# Test for a single point #
 
 # Add FWA_WATERSHED_CODE to table of points and also return stream geometries
 fps_single_l = find_nearest_stream(fps_single)
@@ -49,66 +106,129 @@ nrow(fps_single_p |>
 
 # Geometry of nearest stream to obstacle.
 plot(fps_single_s$geometry)
+plot(fps_single_p$geometry, add = T, col = 'red', lwd = 3)
 
-# Drop the chunks of 0's and add a regex-style wildcard.
-ds_p_g = sub(x = fps_single_p$fwa_code, pattern = '-000000.*', replacement = '-.*')
+```
 
-# Note: we should probably not attempt the upstream length estimation for any
-# stream below the third node, e.g. XXX-XXXXXX-XXXXXX as a minimum.
-ds_p_g_no_giants = ds_p_g[stringr::str_count(ds_p_g, '-') >= 2]
+```{r nearest_stream_multi_point_example}
+# -----------------------------
+# Test for multiple points #
 
-if(length(ds_p_g_no_giants) < length(ds_p_g)) {
-  print("Note: The following FWA code(s) was/were removed as they are very large river systems and would require huge data downloads: ")
-  print(ds_p_g[!ds_p_g %in% ds_p_g_no_giants])
-  ds_p_g = ds_p_g_no_giants
-}
+# Add FWA_WATERSHED_CODE to table of points and also return stream geometries
+fps_multi_l = find_nearest_stream(fps_multi)
 
-# Turn regex query into CQL-type query
-ds_p_g_cql = stringr::str_replace(ds_p_g,'.{2}$','%')
+# Unpack fps_DPG and streams
+fps_multi_p = fps_multi_l$points
+fps_multi_s = fps_multi_l$streams
 
-cql_query = paste0("FWA_WATERSHED_CODE like '",paste0(ds_p_g_cql,collapse="' or FWA_WATERSHED_CODE like '"),"'")
+# How many barriers did we find a sufficiently close stream for?
+nrow(fps_multi_p |>
+  dplyr::filter(!is.na(fwa_code)))
 
-cql_query
+# Geometry of nearest stream to obstacle.
+plot(fps_multi_s$geometry)
+plot(fps_multi_p$geometry, add = T, col = 'red', lwd = 3)
+```
 
-dl_test = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
-  bcdata::filter(bcdata:::CQL(cql_query)) |>
-  bcdata::collect() |>
-  sf::st_zm()
+### 3. Trace Course Downstream (*trace_course_downstream*)
 
-leaflet() |>
-  addPolylines(
-    label = ~labels,
-    data = dl_test |>
-      sf::st_transform(crs = 4326) |>
-      dplyr::mutate(labels = stringr::str_remove_all(FWA_WATERSHED_CODE, '-000000.*'))
-  ) |>
-  addCircleMarkers(
-    color = 'purple',
-    data = sf::st_transform(fps_single_p, 4326)
-  )
+```{r}
+trace_course_downstream(
+  fps_single_p$fwa_code,
+  make_plot = T
+)
+
+# Not working for multiple points yet.
+# trace_course_downstream(
+#   fps_multi_p$fwa_code,
+#   make_plot = T
+# )
+```
+
+- Finds collecting streams downstream of one or more streams.
+
+### 4. Trace Course Upstream (*trace_course_upstream*)
+
+```{r}
+fps_s_upstr = find_stream_network_above_obstacle(
+  fps_single_p,
+  fps_single_s
+)
+
+plot(fps_s_upstr$geometry)
+```
+
+- Finds all streams upstream of one or more streams.
+
+### 5. Estimate Upstream Stream Length (*estimate_total_upstream_length(*)
+
+This function is a slight extension to #4.
+
+
+
+```{r}
+
+
+
+
+# # Drop the chunks of 0's and add a regex-style wildcard.
+# ds_p_g = sub(x = fps_single_p$fwa_code, pattern = '-000000.*', replacement = '-.*')
+# 
+# # Note: we should probably not attempt the upstream length estimation for any
+# # stream below the third node, e.g. XXX-XXXXXX-XXXXXX as a minimum.
+# ds_p_g_no_giants = ds_p_g[stringr::str_count(ds_p_g, '-') >= 2]
+# 
+# if(length(ds_p_g_no_giants) < length(ds_p_g)) {
+#   print("Note: The following FWA code(s) was/were removed as they are very large river systems and would require huge data downloads: ")
+#   print(ds_p_g[!ds_p_g %in% ds_p_g_no_giants])
+#   ds_p_g = ds_p_g_no_giants
+# }
+# 
+# # Turn regex query into CQL-type query
+# ds_p_g_cql = stringr::str_replace(ds_p_g,'.{2}$','%')
+# 
+# cql_query = paste0("FWA_WATERSHED_CODE like '",paste0(ds_p_g_cql,collapse="' or FWA_WATERSHED_CODE like '"),"'")
+# 
+# cql_query
+# 
+# dl_test = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
+#   bcdata::filter(bcdata:::CQL(cql_query)) |>
+#   bcdata::collect() |>
+#   sf::st_zm()
+# 
+# leaflet() |>
+#   addPolylines(
+#     label = ~labels,
+#     data = dl_test |>
+#       sf::st_transform(crs = 4326) |>
+#       dplyr::mutate(labels = stringr::str_remove_all(FWA_WATERSHED_CODE, '-000000.*'))
+#   ) |>
+#   addCircleMarkers(
+#     color = 'purple',
+#     data = sf::st_transform(fps_single_p, 4326)
+#   )
 
 # Split geometry at obstacle.
 dl_test_split = find_stream_network_above_obstacle(fps_single_p,
-                        obstructed_stream = fps_single_s,
-                        stream_network = dl_test)
+                        obstructed_stream = fps_single_s)
 
 plot(dl_test_split)
-
-full_query = sub(x = cql_query, pattern = "-[0-9]{6}-%'", replacement = '')
-number_hyphens = stringr::str_count(full_query, pattern = '-')
-hyphens_needed = 20 - number_hyphens
-full_query = paste0(full_query,paste0(rep('-000000',hyphens_needed),collapse=''),"'")
-
-ds_stream = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
-  bcdata::filter(bcdata:::CQL(full_query)) |>
-  bcdata::collect() |>
-  sf::st_zm() |>
-  sf::st_union()
-
-dl_test_upstream_of_obstacle = suppressWarnings(dl_test_split |>
-  dplyr::filter(!sf::st_touches(geometry, ds_stream, sparse = F)))
-
-plot(dl_test_upstream_of_obstacle)
+# 
+# full_query = sub(x = cql_query, pattern = "-[0-9]{6}-%'", replacement = '')
+# number_hyphens = stringr::str_count(full_query, pattern = '-')
+# hyphens_needed = 20 - number_hyphens
+# full_query = paste0(full_query,paste0(rep('-000000',hyphens_needed),collapse=''),"'")
+# 
+# ds_stream = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
+#   bcdata::filter(bcdata:::CQL(full_query)) |>
+#   bcdata::collect() |>
+#   sf::st_zm() |>
+#   sf::st_union()
+# 
+# dl_test_upstream_of_obstacle = suppressWarnings(dl_test_split |>
+#   dplyr::filter(!sf::st_touches(geometry, ds_stream, sparse = F)))
+# 
+# plot(dl_test_upstream_of_obstacle)
 
 # Select upstream portion of stream and remeasure length in meters.
 upstream_length_measure = sf::st_length(dl_test_upstream_of_obstacle)

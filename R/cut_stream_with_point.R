@@ -22,7 +22,7 @@ cut_stream_with_point = function(points, streams){
   # stream_split = suppressWarnings(sf::st_difference(streams, p_s_nearest_points))
   streams_cut = sf::st_difference(streams_u, p_s_nearest_points_u) |>
     sf::st_cast('LINESTRING') |>
-    st_as_sf() |>
+    sf::st_as_sf() |>
     dplyr::rename(geometry = x)
 
   # Use igraph to group touching stream networks

@@ -6,7 +6,6 @@
 compose_cql_search = function(fwa_codes,
                               multi = F){
 
-  browser()
   # Drop the chunks of 0's and add a regex-style wildcard.
   ds_p_g = sub(x = fwa_codes, pattern = '-000000.*', replacement = '-.*')
 
@@ -15,8 +14,8 @@ compose_cql_search = function(fwa_codes,
   ds_p_g_no_giants = ds_p_g[stringr::str_count(ds_p_g, '-') >= 2]
 
   if(length(ds_p_g_no_giants) < length(ds_p_g)) {
-    print("Note: The following FWA code(s) was/were removed as they are very large river systems and would require huge data downloads: ")
-    print(ds_p_g[!ds_p_g %in% ds_p_g_no_giants])
+    print("Note: One or more FWA code(s) were removed as they are very large river systems and would require huge data downloads: ")
+    # print(ds_p_g[!ds_p_g %in% ds_p_g_no_giants])
     ds_p_g = ds_p_g_no_giants
   }
 

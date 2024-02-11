@@ -1,6 +1,6 @@
 #' Title Get all streams (and their geometries) upstream of a given FWA code.
 #'
-#' @param fwa_code The FWA_WATERSHED_CODE of a target stream
+#' @param fwa_codes FWA_WATERSHED_CODEs for sStreams for which to find upstream tributaries
 #' @param merge_by_BLK Merge resulting stream table by BLUE_LINE_KEY?
 #' @param make_plot Make ggplot of results?
 #' @param add_map_insert Add a little insert of BC to give spatial context of main plot?
@@ -16,39 +16,57 @@
 #' paul_river_upstream
 #' }
 
-trace_course_upstream = function(fwa_code,
+trace_course_upstream = function(fwa_codes,
                                  merge_by_BLK = T,
                                  make_plot = F,
                                  add_map_insert = F,
                                  save_plot = F,
                                  save_plot_location = NULL){
-
   # If plot save location is provided, make_plot should be TRUE.
   if(!is.null(save_plot_location)) make_plot = T
 
-  # Truncate the FWA WATERSHED CODE to remove all occurrences of '-000000-'
-  fwa_code_trunc = sub(x = fwa_code, pattern = '000000.*', replacement = '')
+  # Accept list inputs where an element is named 'points'
+  if(is.list(fwa_codes)){
+    if(names(fwa_codes)[1] == 'points'){
+      fwa_codes = fwa_codes[[1]]$FWA_WATERSHED_CODE
+    }
+  }
 
-  #Download all streams upstream from point
-  cql_pattern = paste0("FWA_WATERSHED_CODE like '",fwa_code_trunc,"%'")
+  # Compose a CQL query string from the FWA codes of the point(s) submitted.
+  cql_query = compose_cql_search(fwa_codes, multi = T)
 
   # If cql pattern is NULL, skip to next iteration; otherwise,
   # this function would attempt to download the whole stream network!
-  if(is.null(cql_pattern)) stop('Error: the submitted FWA code produced a NULL search pattern; please try again!')
+  if(is.null(cql_query)) stop('Error: the submitted FWA code produced a NULL search pattern; please try again!')
 
-  query_test = tryCatch(
-    bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
-      bcdata::filter(bcdata:::CQL(cql_pattern)),
-    error = function(e) stop("Error: Looks like the BC Data Catalogue, or your connection to it, is not working.")
-  )
-
-  stream_dl = query_test |>
+  # Download all streams upstream of point(s)
+  stream_dl = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
+    bcdata::filter(bcdata:::CQL(cql_query)) |>
     bcdata::collect() |>
     sf::st_zm()
 
+  # # Truncate the FWA WATERSHED CODE to remove all occurrences of '-000000-'
+  # fwa_code_trunc = sub(x = fwa_code, pattern = '000000.*', replacement = '')
+
+  # #Download all streams upstream from point
+  # cql_pattern = paste0("FWA_WATERSHED_CODE like '",fwa_code_trunc,"%'")
+
+  # query_test = tryCatch(
+  #   bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
+  #     bcdata::filter(bcdata:::CQL(cql_pattern)),
+  #   error = function(e) stop("Error: Looks like the BC Data Catalogue, or your connection to it, is not working.")
+  # )
+
+  # stream_dl = query_test |>
+  #   bcdata::collect() |>
+  #   sf::st_zm()
+
   if(make_plot){
 
-    p = ggplot2::ggplot() + ggplot2::geom_sf(data = stream_dl) +
+    p = ggplot2::ggplot() +
+      ggplot2::geom_sf(data = stream_dl, col = 'grey') +
+      ggplot2::geom_sf(data = stream_dl[stream_dl$FWA_WATERSHED_CODE %in% fwa_codes,],
+                       col = 'darkblue') +
       ggplot2::theme(panel.background = ggplot2::element_blank()) +
       ggplot2::labs(title = '')
 
@@ -96,7 +114,7 @@ trace_course_upstream = function(fwa_code,
 
   if(merge_by_BLK){
 
-    print("Merging stream geometries by BLUE_LINE_KEY and a handful of other columns.")
+    # print("Merging stream geometries by BLUE_LINE_KEY and a handful of other columns.")
 
     # The following columns are not distinct for each portion of a given stream / river.
     # So, we will group by them.

@@ -8,6 +8,7 @@
 #'
 #' @examples \dontrun
 find_nearest_stream = function(points, max_buffer_dist = 50){
+
   is_spatial = tryCatch(!is.null(sf::st_geometry(points)),
                        error = function(e) FALSE)
   if(!is_spatial){
@@ -49,6 +50,7 @@ find_nearest_stream = function(points, max_buffer_dist = 50){
 
     stream_piece_dl = query_test |> lapply(\(x) bcdata::collect(x)) |> sf::st_zm() |> dplyr::bind_rows()
 
+
   } else {
     # Deal with as table
     query_test = tryCatch(
@@ -57,13 +59,14 @@ find_nearest_stream = function(points, max_buffer_dist = 50){
         ),
       error = function(e) stop("Error: Looks like the BC Data Catalogue, or your connection to it, is not working.")
     )
-    stream_piece_dl = query_test |> bcdata::collect(x) |> sf::st_zm() |> dplyr::bind_rows()
+    stream_piece_dl = query_test |> bcdata::collect() |> sf::st_zm() |> dplyr::bind_rows()
   }
 
   stream_full_dl = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
     bcdata::filter(FWA_WATERSHED_CODE %in% stream_piece_dl$FWA_WATERSHED_CODE) |>
     bcdata::collect() |>
-    dplyr::group_by(FWA_WATERSHED_CODE) |>
+    sf::st_zm() |>
+    dplyr::group_by(FWA_WATERSHED_CODE,BLUE_LINE_KEY) |>
     dplyr::summarise()
 
   # If no stream matched, quit
@@ -71,6 +74,8 @@ find_nearest_stream = function(points, max_buffer_dist = 50){
 
   # Ensure name of geometry column.
   names(stream_full_dl)[ncol(stream_full_dl)] <- 'geometry'
+  # Confirm that stream_full_dl is an {sf} table, not just a tibble...
+  stream_full_dl = sf::st_as_sf(stream_full_dl)
 
   # Match streams to obstacle points by finding the nearest stream for each obstacle.
   point_stream_match = as.data.frame(sf::st_nearest_feature(points, stream_full_dl))
@@ -85,10 +90,10 @@ find_nearest_stream = function(points, max_buffer_dist = 50){
     point_stream_match[point_stream_distances > max_buffer_dist,]$stream_row = NA
   }
   # Pull the FWA_WATERSHED_CODE from matched streams and add as new column to points table
-  points$fwa_code = stream_full_dl[point_stream_match$stream_row,]$FWA_WATERSHED_CODE
+  points$FWA_WATERSHED_CODE = stream_full_dl[point_stream_match$stream_row,]$FWA_WATERSHED_CODE
 
   # Filter streams downloaded for just those present in list of points' fwa codes
-  stream_full_dl = stream_full_dl[stream_full_dl$FWA_WATERSHED_CODE %in% unique(points$fwa_code),]
+  stream_full_dl = stream_full_dl[stream_full_dl$FWA_WATERSHED_CODE %in% unique(points$FWA_WATERSHED_CODE),]
 
   return(list(
     points = points,

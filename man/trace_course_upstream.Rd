@@ -5,7 +5,7 @@
 \title{Title Get all streams (and their geometries) upstream of a given FWA code.}
 \usage{
 trace_course_upstream(
-  fwa_code,
+  fwa_codes,
   merge_by_BLK = T,
   make_plot = F,
   add_map_insert = F,
@@ -14,7 +14,7 @@ trace_course_upstream(
 )
 }
 \arguments{
-\item{fwa_code}{The FWA_WATERSHED_CODE of a target stream}
+\item{fwa_codes}{FWA_WATERSHED_CODEs for sStreams for which to find upstream tributaries}
 
 \item{merge_by_BLK}{Merge resulting stream table by BLUE_LINE_KEY?}
 

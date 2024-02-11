@@ -6,6 +6,8 @@ Authors@R:
 Description: This package contains a large data file that describes a 2-columned table that identifies streams using the FWA_WATERSHED_CODE field from the BC Data Catalogue's Freshwater Atlas. One column indicates upstream and the other downstream streams.
 License: MIT + file LICENSE
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Encoding: UTF-8
@@ -26,3 +28,4 @@ Imports:
     tidygraph
 Enhances: 
     plotly
+VignetteBuilder: knitr

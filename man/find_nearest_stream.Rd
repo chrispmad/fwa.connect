@@ -4,12 +4,12 @@
 \alias{find_nearest_stream}
 \title{Title Find nearest stream to a given point}
 \usage{
-find_nearest_stream(point, max_buffer_dist = 50)
+find_nearest_stream(points, max_buffer_dist = 50)
 }
 \arguments{
-\item{point}{Point to search with}
-
 \item{max_buffer_dist}{How far to look for stream, in meters}
+
+\item{point}{Point to search with}
 }
 \value{
 A single stream in an {sf} table

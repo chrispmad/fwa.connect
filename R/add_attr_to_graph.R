@@ -4,7 +4,6 @@
 #' @param attr One of 'centrality_degree', 'group_id', and 'centrality_edges'
 #'
 #' @return A tidygraph object with one or more added attributes
-#' @export
 #'
 #' @examples if(FALSE){
 #'

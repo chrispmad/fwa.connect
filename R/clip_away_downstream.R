@@ -9,6 +9,7 @@
 #' @examples \dontrun
 clip_away_downstream = function(stream_networks,points){
 
+  # browser()
   # Get downstream stream(s) - whichever of the two obstructed stream
   # pieces that touches the downstream stream is the piece that we will clip
   # away.

@@ -7,7 +7,6 @@
 #' @param save_plot_location Where to save the above plot to?
 #'
 #' @return The total length of streams upstream of a point or stream; if a point is used, the portion of the stream it rests on will be added to this estimate.
-#' @export
 #'
 #' @examples \dontrun
 

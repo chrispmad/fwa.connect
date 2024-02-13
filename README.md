@@ -18,22 +18,28 @@ working with the British Columbia Freshwater Atlas (FWA); specifically,
 the stream network line layer and the lakes layer. These layers (and
 perhaps others in the FWA) share a column: the FWA_WATERSHED_CODE. This
 column is quite ingenious, as it succinctly performs at least four
-functions: - 1. It serves as an (almost) unique ID column. - 2. For a
-given stream X, it describes how far down the ‘receiving’ stream Y the
-stream X joins onto stream Y. - 3. It implies how many streams or rivers
-away from the massive watershed scale collecting river a target stream
-is: e.g., a FWA code of 100-274173-283712-859301-000000… implies that
-our stream makes up a chain of four connected streams, including the
-massive collecting river (the ‘100’, in this case). - 4. It can be used
-to generate a directed ‘graph’, which we can then use to quickly
-calculate useful graph attributes for each node (i.e. stream) in the
-graph, e.g. centrality, component membership (groups of nodes connected
-by at least one edge), betweenness, shortest path between two points,
-eccentricity, etc.
+functions:
+
+- 1.  It serves as an (almost) unique ID column.
+
+- 2.  For a given stream X, it describes how far down the ‘receiving’
+      stream Y the stream X joins onto stream Y.
+
+- 3.  It implies how many streams or rivers away from the massive
+      watershed scale collecting river a target stream is: e.g., a FWA
+      code of 100-274173-283712-859301-000000… implies that our stream
+      makes up a chain of four connected streams, including the massive
+      collecting river (the ‘100’, in this case).
+
+- 4.  It can be used to generate a directed ‘graph’, which we can then
+      use to quickly calculate useful graph attributes for each node
+      (i.e. stream) in the graph, e.g. centrality, component membership
+      (groups of nodes connected by at least one edge), betweenness,
+      shortest path between two points, eccentricity, etc.
 
 ## Installation
 
-You can install the development version of fwa.connect like so:
+You can install the development version of {fwa.connect} like so:
 
 ``` r
 devtools::install_github('chrispmad/fwa.connect')
@@ -55,14 +61,13 @@ dpg = bcmaps::nr_districts() |>
 fps_DPG = bcdata::bcdc_query_geodata("pscis-assessments") |>
   bcdata::filter(INTERSECTS(dpg)) |>
   bcdata::filter(ASSESSMENT_DATE > as.Date('2023-09-01') & ASSESSMENT_DATE < as.Date('2024-12-31')) |>
-  #bcdata::filter(CURRENT_BARRIER_RESULT_CODE = "BARRIER") |>
   bcdata::collect()
 
 # Single barrier point
 fps_single = fps_DPG |>
   dplyr::filter(STREAM_CROSSING_ID == 198771)
 
-# Multiple (N = 100) barrier points
+# Multiple (N = 20) barrier points
 fps_multi = sample(fps_DPG, size = 20, replace = F)
 ```
 

@@ -11,15 +11,25 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 status](https://www.r-pkg.org/badges/version/fwa.connect)](https://CRAN.R-project.org/package=fwa.connect)
 <!-- badges: end -->
 
-Fwa.connect is intended to help users quickly identify patterns of
-connectivity between streams and lakes in the B.C. Data Catalogue’s
-Freshwater Atlas (henceforth, ‘FWA’). By providing a two-column
-data.table that lists up- and down-stream streams (identified by the
-FWA_WATERSHED_CODE field), a tidygraph network object, and some basic
-utility functions to work with upstream graphs of streams, {fwa.connect}
-will hopefully reduce workflow waiting times by eliminating the need to
-download the entirety of the FWA stream network or to perform laborious
-spatial operations to find connections between streams.
+## Foreward
+
+This package, {fwa.connect}, is intended to make your life easier when
+working with the British Columbia Freshwater Atlas (FWA); specifically,
+the stream network line layer and the lakes layer. These layers (and
+perhaps others in the FWA) share a column: the FWA_WATERSHED_CODE. This
+column is quite ingenious, as it succinctly performs at least four
+functions: - 1. It serves as an (almost) unique ID column. - 2. For a
+given stream X, it describes how far down the ‘receiving’ stream Y the
+stream X joins onto stream Y. - 3. It implies how many streams or rivers
+away from the massive watershed scale collecting river a target stream
+is: e.g., a FWA code of 100-274173-283712-859301-000000… implies that
+our stream makes up a chain of four connected streams, including the
+massive collecting river (the ‘100’, in this case). - 4. It can be used
+to generate a directed ‘graph’, which we can then use to quickly
+calculate useful graph attributes for each node (i.e. stream) in the
+graph, e.g. centrality, component membership (groups of nodes connected
+by at least one edge), betweenness, shortest path between two points,
+eccentricity, etc.
 
 ## Installation
 
@@ -31,174 +41,256 @@ devtools::install_github('chrispmad/fwa.connect')
 remotes::install_github('chrispmad/fwa.connect')
 ```
 
+## Download Toy Dataset
+
+``` r
+# ---------------
+# Get test points
+
+# Prince George Natural Resource District Polygon
+dpg = bcmaps::nr_districts() |>
+  dplyr::filter(ORG_UNIT_NAME == 'Prince George Natural Resource District')
+
+# Potential barriers to fish movement in streams
+fps_DPG = bcdata::bcdc_query_geodata("pscis-assessments") |>
+  bcdata::filter(INTERSECTS(dpg)) |>
+  bcdata::filter(ASSESSMENT_DATE > as.Date('2023-09-01') & ASSESSMENT_DATE < as.Date('2024-12-31')) |>
+  #bcdata::filter(CURRENT_BARRIER_RESULT_CODE = "BARRIER") |>
+  bcdata::collect()
+
+# Single barrier point
+fps_single = fps_DPG |>
+  dplyr::filter(STREAM_CROSSING_ID == 198771)
+
+# Multiple (N = 100) barrier points
+fps_multi = sample(fps_DPG, size = 20, replace = F)
+```
+
 ## Functions
 
-### Included dataset: fwa_up_and_downstream_tbl
+The principle functions of the {fwa.connect} package are as follows:
 
-A two-column table from which an {igraph} / {tidygraph} graph object can
-be derived. The first column represents the FWA_WATERSHED_CODE
-(near-unique ID column) of a target stream in the FWA
-(‘upstream_fwa_code’), the second represents the FWA_WATERSHED_CODE of
-the stream downstream of the target stream.
+### 1. FWA network graph object (*fwa_graph*)
+
+- packages the FWA stream network as a {tidygraph} graph object, i.e. a
+  table of node data (streams, in this case; N = 1,523,261) and a table
+  of edge data (connections between nodes; N = 1,522,833). This graph
+  supports many subsequent functions and can be used by any savvy
+  analyst that knows the basics of {igraph} and/or {tidygraph}.
 
 ``` r
-knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl, 2))
+# fwa_graph()
 ```
 
-| upstream_fwa_code                                                                                                                               | downstream_fwa_code                                                                                                                             |
-|:------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------|
-| 100-000025-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
-| 100-000061-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
+### 2. Delineate Component Groups (*delineate_comps*)
 
-### fwa_graph
-
-This function takes the included dataset described above and turns it
-into a {tidygraph} graph object.
+- Identifies the component membership of one or more streams, using
+  their FWA_WATERSHED_CODEs.
 
 ``` r
-if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. 
-# Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
-```
+# Just to ensure we have streams that are part of different groups, let's snag the geometries of three different streams around the province.
 
-### trace_course_downstream
+stream_network_id = '92344413-8035-4c08-b996-65a9b3f62fca'
 
-Trace the course of flow downstream from the stream you identify with
-its FWA WATERSHED CODE id. This function returns an {sf} spatial table
-and an optional ggplot.
+  # Snag the Thompson-Okaganan Region
+TO = bcmaps::nr_regions() |> 
+  dplyr::filter(ORG_UNIT == 'RTO')
 
-``` r
-# An example FWA code.
-fwa_code = "200-948755-999851-274772-093336-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000"
-
-ds = fwa.connect::trace_course_downstream(fwa_code = fwa_code,
-                        merge_by_BLK = T,
-                        make_plot = T, 
-                        add_map_insert = T,
-                        save_plot = F,
-                        save_plot_location = NA)
-#> [1] "working on stream juncture 1 of 4"
-#> [1] "working on stream juncture 2 of 4"
-#> [1] "working on stream juncture 3 of 4"
-#> [1] "working on stream juncture 4 of 4"
-#> bc_bound_hres was updated on 2023-04-11
-
-knitr::kable(head(ds$downstream_course, 2))
-```
-
-| WATERSHED_GROUP_ID | BLUE_LINE_KEY | WATERSHED_KEY | FWA_WATERSHED_CODE                                                                                                                              | WATERSHED_GROUP_CODE | GNIS_ID | GNIS_NAME   | LEFT_RIGHT_TRIBUTARY | BLUE_LINE_KEY_50K | WATERSHED_CODE_50K                            | WATERSHED_KEY_50K | WATERSHED_GROUP_CODE_50K | GRADIENT | LENGTH_METRE | DOWNSTREAM_ROUTE_MEASURE | STREAM_MAGNITUDE | STREAM_ORDER | geometry                     |
-|:-------------------|:--------------|:--------------|:------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------|:--------|:------------|:---------------------|:------------------|:----------------------------------------------|:------------------|:-------------------------|:---------|-------------:|-------------------------:|-----------------:|-------------:|:-----------------------------|
-| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | 541               | 230000000000000000000000000000000000000000000 | 541               | LPCE                     | NA       |  53153.94676 |                  1584684 |           198320 |            9 | MULTILINESTRING ((1336075 1… |
-| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | NA                | NA                                            | NA                | NA                       | NA       |     53.26028 |                  1584865 |           157451 |            9 | LINESTRING (1324634 1253054… |
-
-``` r
-
-ds$plot
-```
-
-<img src="man/figures/README-trace_course_downstream_eg-1.png" style="display: block; margin: auto;" />
-
-### trace_course_upstream
-
-``` r
-# An example FWA code.
-fwa_code = "200-948755-999851-274772-093336-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000"
-
-us = fwa.connect::trace_course_upstream(fwa_code = fwa_code,
-                        merge_by_BLK = T,
-                        make_plot = T, 
-                        add_map_insert = T,
-                        save_plot = F,
-                        save_plot_location = NA)
-#> [1] "Merging stream geometries by BLUE_LINE_KEY and a handful of other columns."
-
-knitr::kable(head(us$upstream_streams, 2))
-```
-
-| WATERSHED_GROUP_ID | BLUE_LINE_KEY | WATERSHED_KEY | FWA_WATERSHED_CODE                                                                                                                              | WATERSHED_GROUP_CODE | GNIS_ID | GNIS_NAME | LEFT_RIGHT_TRIBUTARY | STREAM_MAGNITUDE | BLUE_LINE_KEY_50K | WATERSHED_CODE_50K | WATERSHED_KEY_50K | WATERSHED_GROUP_CODE_50K | GRADIENT | LENGTH_METRE | DOWNSTREAM_ROUTE_MEASURE | STREAM_ORDER | geometry                     |
-|-------------------:|--------------:|--------------:|:------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------|:--------|:----------|:---------------------|-----------------:|------------------:|:-------------------|------------------:|:-------------------------|:---------|-------------:|-------------------------:|-------------:|:-----------------------------|
-|                 50 |     359006292 |     359553059 | 200-948755-999851-274772-093336-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | LEFT                 |                1 |                NA | NA                 |                NA | NA                       | NA       |     392.6911 |                 10.03823 |            1 | MULTILINESTRING ((1036038 1… |
-|                 50 |     359033242 |     359033242 | 200-948755-999851-274772-093336-012332-516017-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | FINL                 | NA      | NA        | RIGHT                |                1 |                NA | NA                 |                NA | NA                       | NA       |     471.3533 |                  0.00000 |            1 | LINESTRING (1036589 1373282… |
-
-``` r
-
-us$plot
-```
-
-<img src="man/figures/README-trace_course_upstream_eg-1.png" style="display: block; margin: auto;" />
-
-### estimate_total_upstream_length
-
-Estimate the summed lengths of all streams above a certain point in
-space, e.g. a barrier to fish passage. This can be done for a single
-point or for an {sf} table of multiple points.
-
-#### Single point
-
-``` r
-# library(bcdata) # To access datasets in the open-source BC Data Catalogue
-# library(sf)
-# library(progress)
-
-# Download a possible fish barrier from the PSCIS dataset.
-fp = bcdata::bcdc_query_geodata("pscis-assessments") |> 
-  bcdata::filter(RESPONSIBLE_PARTY_NAME == 'WEST FRASER MILLS LTD.',
-         STREAM_NAME == 'Nass River',
-         ROAD_NAME == 'Warren Road') |>
+# Get big streams in the Thompson-Okanagan Region
+TO_streams = bcdata::bcdc_query_geodata(stream_network_id) |> 
+  bcdata::filter(bcdata::INTERSECTS(TO)) |> 
+  bcdata::filter(STREAM_ORDER > 6) |> 
   bcdata::collect()
 
-# Find the nearest stream within 50 meters.
-stream = fwa.connect::find_nearest_stream(fp, max_buffer_dist = 50)
+TO_streams = delineate_comps(TO_streams)
 
-# Calculate the summed length of all streams upstream from a point (or a FWA code)
-upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
-                                            make_plot = T,
-                                            save_plot = F)
-#> 1 point to assess...
+library(ggplot2)
+
+ggplot() + 
+  geom_sf(data = bcmaps::bc_bound(), fill = 'antiquewhite') +
+  geom_sf(data = TO, col = 'purple', alpha = 0.5) +
+  geom_sf(data = TO_streams, aes(col = comp_group, fill = comp_group)) + 
+  ggthemes::theme_map() + 
+  labs(title = 'These two major stream systems are physically disconnected, according to the Freshwater Atlas') + 
+  coord_sf(xlim = sf::st_bbox(TO)[c(1,3)],
+           ylim = sf::st_bbox(TO)[c(2,4)])
 ```
 
-<img src="man/figures/README-est_length_single_point_example-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-delineate_comps_example-1.png" style="display: block; margin: auto;" />
+
+### 3. Find Nearest Stream (*find_nearest_stream*)
+
+- Finds the nearest stream for an {sf} POINT simple feature collection
+  of 1 or more features.
+
+``` r
+# Add FWA_WATERSHED_CODE to table of points and also return stream geometries
+fps_single_l = find_nearest_stream(fps_single)
+
+# Unpack fps_DPG and streams
+fps_single_p = fps_single_l$points
+fps_single_s = fps_single_l$streams
+
+# How many barriers did we find a sufficiently close stream for?
+nrow(fps_single_p |>
+  dplyr::filter(!is.na(FWA_WATERSHED_CODE)))
+#> [1] 1
+
+# Geometry of nearest stream to obstacle.
+plot(fps_single_s$geometry)
+plot(fps_single_p$geometry, add = T, col = 'red', lwd = 3)
+```
+
+<img src="man/figures/README-nearest_stream_single_point_example-1.png" style="display: block; margin: auto;" />
+
+``` r
+# Add FWA_WATERSHED_CODE to table of points and also return stream geometries
+fps_multi_l = find_nearest_stream(fps_multi)
+
+# Unpack fps_DPG and streams
+fps_multi_p = fps_multi_l$points
+fps_multi_s = fps_multi_l$streams
+
+# How many barriers did we find a sufficiently close stream for?
+nrow(fps_multi_p |>
+  dplyr::filter(!is.na(FWA_WATERSHED_CODE)))
+#> [1] 85
+
+# Geometry of nearest stream to obstacle.
+plot(fps_multi_s$geometry)
+plot(fps_multi_p$geometry, add = T, col = 'red', lwd = 3)
+```
+
+<img src="man/figures/README-nearest_stream_multi_point_example-1.png" style="display: block; margin: auto;" />
+
+### 3. Trace Course Downstream (*trace_course_downstream*)
+
+- Finds collecting streams downstream of one or more points or streams.
+
+``` r
+minaker = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |> 
+  bcdata::filter(GNIS_NAME == 'Minaker River') |> 
+  bcdata::collect() |> 
+  sf::st_zm() |> 
+  dplyr::group_by(GNIS_NAME, BLUE_LINE_KEY, FWA_WATERSHED_CODE) |> 
+  dplyr::summarise()
+
+ds_course = trace_course_downstream(
+  minaker$FWA_WATERSHED_CODE,
+  make_plot = T,
+  add_map_insert = T
+)
+#> [1] "working on stream juncture 1 of 5"
+#> [1] "working on stream juncture 2 of 5"
+#> [1] "working on stream juncture 3 of 5"
+#> [1] "working on stream juncture 4 of 5"
+#> [1] "working on stream juncture 5 of 5"
+
+# Not working for multiple points yet.
+# trace_course_downstream(
+#   fps_multi_p$fwa_code,
+#   make_plot = T
+# )
+```
+
+### 4. Trace Course Upstream (*trace_course_upstream*)
+
+- Finds all streams upstream of one or more streams. Optional ggplot
+  that shows the submitted streams in dark blue. Optional merging of
+  streams in output table by BLUE_LINE_KEY and a handful of other
+  columns.
+
+``` r
+# Single point
+fps_s_upstr = trace_course_upstream(
+  fps_single_s$FWA_WATERSHED_CODE,
+  make_plot = T,
+  add_map_insert = T
+)
+
+fps_s_upstr$plot
+```
+
+<img src="man/figures/README-unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
 
 ``` r
 
-knitr::kable(
-  upstream_l 
+# Multiple points
+fps_m_upstr = trace_course_upstream(
+  fps_multi_s$FWA_WATERSHED_CODE,
+  make_plot = T,
+  add_map_insert = T
 )
+
+fps_m_upstr$plot
 ```
 
-| total_length_m | id                                                             | search_outcome               |
-|---------------:|:---------------------------------------------------------------|:-----------------------------|
-|          13908 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-3e6b80c7_18d52f29df9\_-14de | stream(s) found and measured |
+<img src="man/figures/README-unnamed-chunk-3-2.png" style="display: block; margin: auto;" />
 
-#### Multiple points
+### 5. Clip away streams downstream of point(s) (*clip_away_downstream*)
+
+- Removes streams downstream from point(s)
 
 ``` r
-# Calculate the length for multiple points.
-fps = bcdata::bcdc_query_geodata("pscis-assessments") |>
-  bcdata::filter(ASSESSMENT_DATE > as.Date('2020-10-01') & ASSESSMENT_DATE < as.Date('2021-01-01')) |> 
-  bcdata::collect()
+fps_s_upstr_clipped = clip_away_downstream(
+  fps_s_upstr$upstream_streams,
+  fps_single_p
+  )
 
-upstream_lengths = fwa.connect::estimate_total_upstream_length(
-  obstacles = fps,
-  make_plot = F,
-  save_plot = F
-)
-#> 11 points to assess...
-
-knitr::kable(
-  upstream_lengths
-)
+ggplot() + 
+  geom_sf(data = fps_s_upstr$upstream_streams, color = 'grey') + 
+  geom_sf(data = fps_s_upstr_clipped, color = 'orange') + 
+  geom_sf(data = fps_single_p, col = 'red')
 ```
 
-| total_length_m | id                                                          | search_outcome               |
-|---------------:|:------------------------------------------------------------|:-----------------------------|
-|           4386 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24a | stream(s) found and measured |
-|          30012 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24b | stream(s) found and measured |
-|           8722 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24c | stream(s) found and measured |
-|           6834 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24d | stream(s) found and measured |
-|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24e | stream(s) found and measured |
-|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24f | stream(s) found and measured |
-|           9512 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_250 | stream(s) found and measured |
-|           4272 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_251 | stream(s) found and measured |
-|           4028 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_252 | stream(s) found and measured |
-|            153 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_253 | stream(s) found and measured |
-|         111073 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_254 | stream(s) found and measured |
+<img src="man/figures/README-unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+
+``` r
+
+# Still working on this vectorized form of the clip away function.
+fps_m_upstream_clipped = clip_away_downstream(
+  fps_m_upstr$upstream_streams,
+  fps_multi_p
+  )
+
+# Check out an example area with multiple potential stream obstacles.
+ggplot() + 
+  geom_sf(data = fps_m_upstr$upstream_streams, color = 'grey') + 
+  geom_sf(data = fps_m_upstream_clipped, color = 'orange') + 
+  geom_sf(data = fps_multi_p, col = 'red') +
+    ggplot2::coord_sf(xlim = c(1205291,1220000),
+                      ylim = c(1080000,1095000))
+```
+
+<img src="man/figures/README-unnamed-chunk-4-2.png" style="display: block; margin: auto;" />
+
+``` r
+
+# Double check that we're getting the same result as the individual point test.
+ggplot() + 
+  geom_sf(data = fps_m_upstr$upstream_streams, color = 'grey') + 
+  geom_sf(data = fps_m_upstream_clipped, color = 'orange') + 
+  geom_sf(data = fps_multi_p, col = 'red') +
+    ggplot2::coord_sf(xlim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(1,3)],
+                      ylim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(2,4)])
+```
+
+<img src="man/figures/README-unnamed-chunk-4-3.png" style="display: block; margin: auto;" />
+
+Combining these tools to, e.g., estimate upstream stream length
+
+``` r
+fps_stream_matched = fps_single |> 
+  find_nearest_stream()
+  
+fps_stream_matched |> 
+  trace_course_upstream() |> 
+  clip_away_downstream(fps_stream_matched$points) |> 
+  dplyr::mutate(indiv_l = as.numeric(sf::st_length(geometry))) |>
+  sf::st_drop_geometry() |> 
+  dplyr::summarise(total_upstr_len_m = sum(indiv_l))
+#> # A tibble: 1 × 1
+#>   total_upstr_len_m
+#>               <dbl>
+#> 1            84164.
+```

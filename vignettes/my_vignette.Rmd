@@ -1,5 +1,5 @@
 ---
-title: "my_vignette"
+title: "fwa.connect"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{my_vignette}
@@ -9,25 +9,27 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   message = F,
-  warning = F
+  warning = F,
+  fig.width = 6,
+  fig.height = 4
 )
-
+library(fwa.connect)
 ```
 
 ## Foreward
 
 This package, {fwa.connect}, is intended to make your life easier when working with the British Columbia Freshwater Atlas (FWA); specifically, the stream network line layer and the lakes layer. These layers (and perhaps others in the FWA) share a column: the FWA_WATERSHED_CODE. This column is quite ingenious, as it succinctly performs at least four functions:
-1. It serves as an (almost) unique ID column.
-2. For a given stream X, it describes how far down the 'receiving' stream Y the stream X joins onto stream Y.
-3. It implies how many streams or rivers away from the massive watershed scale collecting river a target stream is: e.g., a FWA code of 100-274173-283712-859301-000000... implies that our stream makes up a chain of four connected streams, including the massive collecting river (the '100', in this case).
-4. It can be used to generate a directed 'graph', which we can then use to quickly calculate useful graph attributes for each node (i.e. stream) in the graph, e.g. centrality, component membership (groups of nodes connected by at least one edge), betweenness, shortest path between two points, eccentricity, etc.
+- 1. It serves as an (almost) unique ID column.
+- 2. For a given stream X, it describes how far down the 'receiving' stream Y the stream X joins onto stream Y.
+- 3. It implies how many streams or rivers away from the massive watershed scale collecting river a target stream is: e.g., a FWA code of 100-274173-283712-859301-000000... implies that our stream makes up a chain of four connected streams, including the massive collecting river (the '100', in this case).
+- 4. It can be used to generate a directed 'graph', which we can then use to quickly calculate useful graph attributes for each node (i.e. stream) in the graph, e.g. centrality, component membership (groups of nodes connected by at least one edge), betweenness, shortest path between two points, eccentricity, etc.
 
-## Grab Toy Dataset
+## Download Toy Dataset
 
 ```{r get_toy_dataset}
 # ---------------
@@ -66,25 +68,35 @@ The principle functions of the {fwa.connect} package are as follows:
 
 ### 2. Delineate Component Groups (*delineate_comps*)
 
-- Identifies the component membership of one or more FWA_WATERSHED_CODEs.
+- Identifies the component membership of one or more streams, using their FWA_WATERSHED_CODEs.
 
 ```{r delineate_comps_example}
 # Just to ensure we have streams that are part of different groups, let's snag the geometries of three different streams around the province.
+
 stream_network_id = '92344413-8035-4c08-b996-65a9b3f62fca'
 
-some_streams = bcdata::bcdc_query_geodata(stream_network_id) |> 
-  bcdata::filter(GNIS_NAME %in% c("Paul River","Spius Creek","Taku River")) |> 
+  # Snag the Thompson-Okaganan Region
+TO = bcmaps::nr_regions() |> 
+  dplyr::filter(ORG_UNIT == 'RTO')
+
+# Get big streams in the Thompson-Okanagan Region
+TO_streams = bcdata::bcdc_query_geodata(stream_network_id) |> 
+  bcdata::filter(bcdata::INTERSECTS(TO)) |> 
+  bcdata::filter(STREAM_ORDER > 6) |> 
   bcdata::collect()
 
-some_streams = delineate_comps(some_streams)
+TO_streams = delineate_comps(TO_streams)
 
 library(ggplot2)
 
 ggplot() + 
-  geom_sf(data = bcmaps::bc_bound()) +
-  geom_sf(data = some_streams, aes(col = comp_group, fill = comp_group)) + 
+  geom_sf(data = bcmaps::bc_bound(), fill = 'antiquewhite') +
+  geom_sf(data = TO, col = 'purple', alpha = 0.5) +
+  geom_sf(data = TO_streams, aes(col = comp_group, fill = comp_group)) + 
   ggthemes::theme_map() + 
-  labs(title = 'These three streams are part of separate graph components')
+  labs(title = 'These two major stream systems are physically disconnected, according to the Freshwater Atlas') + 
+  coord_sf(xlim = sf::st_bbox(TO)[c(1,3)],
+           ylim = sf::st_bbox(TO)[c(2,4)])
 ```
 
 ### 3. Find Nearest Stream (*find_nearest_stream*)
@@ -138,7 +150,7 @@ minaker = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
   dplyr::group_by(GNIS_NAME, BLUE_LINE_KEY, FWA_WATERSHED_CODE) |> 
   dplyr::summarise()
 
-trace_course_downstream(
+ds_course = trace_course_downstream(
   minaker$FWA_WATERSHED_CODE,
   make_plot = T,
   add_map_insert = T
@@ -180,8 +192,10 @@ fps_m_upstr$plot
 - Removes streams downstream from point(s)
 
 ```{r}
-fps_s_upstr_clipped = clip_away_downstream(fps_single_p,
-                     fps_s_upstr$upstream_streams)
+fps_s_upstr_clipped = clip_away_downstream(
+  fps_s_upstr$upstream_streams,
+  fps_single_p
+  )
 
 ggplot() + 
   geom_sf(data = fps_s_upstr$upstream_streams, color = 'grey') + 
@@ -224,9 +238,3 @@ fps_stream_matched |>
   sf::st_drop_geometry() |> 
   dplyr::summarise(total_upstr_len_m = sum(indiv_l))
 ```
-
-
-
-### 6. Estimate Upstream Stream Length (*estimate_total_upstream_length(*)
-
-This function is a slight extension to #4.

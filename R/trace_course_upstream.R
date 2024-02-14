@@ -68,7 +68,8 @@ trace_course_upstream = function(fwa_codes,
       ggplot2::geom_sf(data = stream_dl[stream_dl$FWA_WATERSHED_CODE %in% fwa_codes,],
                        col = 'darkblue') +
       ggplot2::theme(panel.background = ggplot2::element_blank()) +
-      ggplot2::labs(title = '')
+      ggplot2::labs(title = '') +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1))
 
     if(add_map_insert){
       # Make bounding box of stream in bc albers.

@@ -20,39 +20,23 @@ perhaps others in the FWA) share a column: the FWA_WATERSHED_CODE. This
 column is quite ingenious, as it succinctly performs at least four
 functions:
 
-- 1.  It serves as an (almost) unique ID column.
-
-- 2.  For a given stream X, it describes how far down the ‘receiving’
-      stream Y the stream X joins onto stream Y.
-
-- 3.  It implies how many streams or rivers away from the massive
-      watershed scale collecting river a target stream is: e.g., a FWA
-      code of 100-274173-283712-859301-000000… implies that our stream
-      makes up a chain of four connected streams, including the massive
-      collecting river (the ‘100’, in this case).
-
-- 4.  It can be used to generate a directed ‘graph’, which we can then
-      use to quickly calculate useful graph attributes for each node
-      (i.e. stream) in the graph, e.g. centrality, component membership
-      (groups of nodes connected by at least one edge), betweenness,
-      shortest path between two points, eccentricity, etc.
-
-## Installation
-
-You can install the development version of {fwa.connect} like so:
-
-``` r
-devtools::install_github('chrispmad/fwa.connect')
-# or 
-remotes::install_github('chrispmad/fwa.connect')
-```
+- It serves as an (almost) unique ID column.
+- For a given stream X, it describes how far down the ‘receiving’ stream
+  Y the stream X joins onto stream Y.
+- It implies how many streams or rivers away from the massive watershed
+  scale collecting river a target stream is: e.g., a FWA code of
+  100-274173-283712-859301-000000… implies that our stream makes up a
+  chain of four connected streams, including the massive collecting
+  river (the ‘100’, in this case).
+- It can be used to generate a directed ‘graph’, which we can then use
+  to quickly calculate useful graph attributes for each node
+  (i.e. stream) in the graph, e.g. centrality, component membership
+  (groups of nodes connected by at least one edge), ‘betweenness’,
+  shortest path between two points, eccentricity, etc.
 
 ## Download Toy Dataset
 
 ``` r
-# ---------------
-# Get test points
-
 # Prince George Natural Resource District Polygon
 dpg = bcmaps::nr_districts() |>
   dplyr::filter(ORG_UNIT_NAME == 'Prince George Natural Resource District')
@@ -93,7 +77,8 @@ The principle functions of the {fwa.connect} package are as follows:
   their FWA_WATERSHED_CODEs.
 
 ``` r
-# Just to ensure we have streams that are part of different groups, let's snag the geometries of three different streams around the province.
+# Just to ensure we have streams that are part of different groups, 
+# let's snag the geometries of three different streams around the province.
 
 stream_network_id = '92344413-8035-4c08-b996-65a9b3f62fca'
 
@@ -108,20 +93,9 @@ TO_streams = bcdata::bcdc_query_geodata(stream_network_id) |>
   bcdata::collect()
 
 TO_streams = delineate_comps(TO_streams)
-
-library(ggplot2)
-
-ggplot() + 
-  geom_sf(data = bcmaps::bc_bound(), fill = 'antiquewhite') +
-  geom_sf(data = TO, col = 'purple', alpha = 0.5) +
-  geom_sf(data = TO_streams, aes(col = comp_group, fill = comp_group)) + 
-  ggthemes::theme_map() + 
-  labs(title = 'These two major stream systems are physically disconnected, according to the Freshwater Atlas') + 
-  coord_sf(xlim = sf::st_bbox(TO)[c(1,3)],
-           ylim = sf::st_bbox(TO)[c(2,4)])
 ```
 
-<img src="man/figures/README-delineate_comps_example-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-2-1.png" style="display: block; margin: auto;" />
 
 ### 3. Find Nearest Stream (*find_nearest_stream*)
 
@@ -191,6 +165,12 @@ ds_course = trace_course_downstream(
 #> [1] "working on stream juncture 4 of 5"
 #> [1] "working on stream juncture 5 of 5"
 
+ds_course$plot
+```
+
+<img src="man/figures/README-unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+
+``` r
 # Not working for multiple points yet.
 # trace_course_downstream(
 #   fps_multi_p$fwa_code,
@@ -201,9 +181,9 @@ ds_course = trace_course_downstream(
 ### 4. Trace Course Upstream (*trace_course_upstream*)
 
 - Finds all streams upstream of one or more streams. Optional ggplot
-  that shows the submitted streams in dark blue. Optional merging of
-  streams in output table by BLUE_LINE_KEY and a handful of other
-  columns.
+  that shows the submitted stream(s) in dark blue and the upstream bits
+  in grey. Optional merging of streams in output table by BLUE_LINE_KEY
+  and a handful of other columns.
 
 ``` r
 # Single point
@@ -216,10 +196,9 @@ fps_s_upstr = trace_course_upstream(
 fps_s_upstr$plot
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
 
 ``` r
-
 # Multiple points
 fps_m_upstr = trace_course_upstream(
   fps_multi_s$FWA_WATERSHED_CODE,
@@ -230,13 +209,16 @@ fps_m_upstr = trace_course_upstream(
 fps_m_upstr$plot
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-2.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
 
 ### 5. Clip away streams downstream of point(s) (*clip_away_downstream*)
 
-- Removes streams downstream from point(s)
+- Removes the portions of stream network(s) (found using the trace
+  course upstream function above) that are downstream of the supplied
+  point(s).
 
 ``` r
+# For a single point and stream network.
 fps_s_upstr_clipped = clip_away_downstream(
   fps_s_upstr$upstream_streams,
   fps_single_p
@@ -245,14 +227,15 @@ fps_s_upstr_clipped = clip_away_downstream(
 ggplot() + 
   geom_sf(data = fps_s_upstr$upstream_streams, color = 'grey') + 
   geom_sf(data = fps_s_upstr_clipped, color = 'orange') + 
-  geom_sf(data = fps_single_p, col = 'red')
+  geom_sf(data = fps_single_p, col = 'red') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 ``` r
 
-# Still working on this vectorized form of the clip away function.
+# For multiple points and stream networks.
 fps_m_upstream_clipped = clip_away_downstream(
   fps_m_upstr$upstream_streams,
   fps_multi_p
@@ -267,20 +250,7 @@ ggplot() +
                       ylim = c(1080000,1095000))
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-2.png" style="display: block; margin: auto;" />
-
-``` r
-
-# Double check that we're getting the same result as the individual point test.
-ggplot() + 
-  geom_sf(data = fps_m_upstr$upstream_streams, color = 'grey') + 
-  geom_sf(data = fps_m_upstream_clipped, color = 'orange') + 
-  geom_sf(data = fps_multi_p, col = 'red') +
-    ggplot2::coord_sf(xlim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(1,3)],
-                      ylim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(2,4)])
-```
-
-<img src="man/figures/README-unnamed-chunk-4-3.png" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-6-2.png" style="display: block; margin: auto;" />
 
 Combining these tools to, e.g., estimate upstream stream length
 
@@ -288,14 +258,16 @@ Combining these tools to, e.g., estimate upstream stream length
 fps_stream_matched = fps_single |> 
   find_nearest_stream()
   
-fps_stream_matched |> 
+length_tbl = fps_stream_matched |> 
   trace_course_upstream() |> 
   clip_away_downstream(fps_stream_matched$points) |> 
   dplyr::mutate(indiv_l = as.numeric(sf::st_length(geometry))) |>
   sf::st_drop_geometry() |> 
   dplyr::summarise(total_upstr_len_m = sum(indiv_l))
-#> # A tibble: 1 × 1
-#>   total_upstr_len_m
-#>               <dbl>
-#> 1            84164.
+
+knitr::kable(length_tbl)
 ```
+
+| total_upstr_len_m |
+|------------------:|
+|          84163.61 |

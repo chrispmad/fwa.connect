@@ -98,13 +98,10 @@ Estimate the summed lengths of all streams above a certain point in space, e.g. 
 #### Single point
 
 ```{r est_length_single_point_example}
-# library(bcdata) # To access datasets in the open-source BC Data Catalogue
-# library(sf)
-# library(progress)
 
 # Download a possible fish barrier from the PSCIS dataset.
-
 # This is the code for pscis-assessments:
+
 pscis_layer_id = '7ecfafa6-5e18-48cd-8d9b-eae5b5ea2881'
 
 fp = bcdata::bcdc_query_geodata(pscis_layer_id) |> 
@@ -113,17 +110,14 @@ fp = bcdata::bcdc_query_geodata(pscis_layer_id) |>
          ROAD_NAME == 'Warren Road') |>
   bcdata::collect()
 
-# Find the nearest stream within 50 meters.
-stream = fwa.connect::find_nearest_stream(fp, max_buffer_dist = 50)
-
 # Calculate the summed length of all streams upstream from a point (or a FWA code)
 upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
                                             make_plot = T,
                                             save_plot = F)
 
-knitr::kable(
-  upstream_l 
-)
+upstream_l |> 
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry()
 ```
 
 #### Multiple points
@@ -140,7 +134,7 @@ upstream_lengths = fwa.connect::estimate_total_upstream_length(
   save_plot = F
 )
 
-knitr::kable(
-  upstream_lengths
-)
+upstream_lengths |> 
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry()
 ```

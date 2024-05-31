@@ -87,7 +87,7 @@ knitr::kable(head(ds$downstream_course, 2))
 
 | WATERSHED_GROUP_ID | BLUE_LINE_KEY | WATERSHED_KEY | FWA_WATERSHED_CODE                                                                                                                              | WATERSHED_GROUP_CODE | GNIS_ID | GNIS_NAME   | LEFT_RIGHT_TRIBUTARY | BLUE_LINE_KEY_50K | WATERSHED_CODE_50K                            | WATERSHED_KEY_50K | WATERSHED_GROUP_CODE_50K | GRADIENT | LENGTH_METRE | DOWNSTREAM_ROUTE_MEASURE | STREAM_MAGNITUDE | STREAM_ORDER | geometry                     |
 |:-------------------|:--------------|:--------------|:------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------|:--------|:------------|:---------------------|:------------------|:----------------------------------------------|:------------------|:-------------------------|:---------|-------------:|-------------------------:|-----------------:|-------------:|:-----------------------------|
-| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | 541               | 230000000000000000000000000000000000000000000 | 541               | LPCE                     | NA       |  53153.94676 |                  1584684 |           198320 |            9 | MULTILINESTRING ((1336075 1… |
+| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | 541               | 230000000000000000000000000000000000000000000 | 541               | LPCE                     | NA       |  53153.94676 |                  1584684 |           198320 |            9 | MULTILINESTRING ((1336501 1… |
 | 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | NA                | NA                                            | NA                | NA                       | NA       |     53.26028 |                  1584865 |           157451 |            9 | LINESTRING (1324634 1253054… |
 
 ``` r
@@ -135,45 +135,46 @@ point or for an {sf} table of multiple points.
 #### Single point
 
 ``` r
-# library(bcdata) # To access datasets in the open-source BC Data Catalogue
-# library(sf)
-# library(progress)
 
 # Download a possible fish barrier from the PSCIS dataset.
-fp = bcdata::bcdc_query_geodata("pscis-assessments") |> 
+# This is the code for pscis-assessments:
+
+pscis_layer_id = '7ecfafa6-5e18-48cd-8d9b-eae5b5ea2881'
+
+fp = bcdata::bcdc_query_geodata(pscis_layer_id) |> 
   bcdata::filter(RESPONSIBLE_PARTY_NAME == 'WEST FRASER MILLS LTD.',
          STREAM_NAME == 'Nass River',
          ROAD_NAME == 'Warren Road') |>
   bcdata::collect()
 
-# Find the nearest stream within 50 meters.
-stream = fwa.connect::find_nearest_stream(fp, max_buffer_dist = 50)
-
 # Calculate the summed length of all streams upstream from a point (or a FWA code)
 upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
                                             make_plot = T,
                                             save_plot = F)
-#> 1 point to assess...
+#> 
+#>  1 point to assess...
 ```
 
 <img src="man/figures/README-est_length_single_point_example-1.png" style="display: block; margin: auto;" />
 
 ``` r
 
-knitr::kable(
-  upstream_l 
-)
+upstream_l |> 
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry()
+#> # A tibble: 1 × 5
+#>   FUNDING_PROJECT         RESPONSIBLE_PARTY_NAME group_id total_length_m$total…¹
+#> * <chr>                   <chr>                     <int>                  <dbl>
+#> 1 2008 Upper Nass RiverW… WEST FRASER MILLS LTD.        1                  13859
+#> # ℹ abbreviated name: ¹​total_length_m$total_length_m
+#> # ℹ 1 more variable: search_outcome <chr>
 ```
-
-| total_length_m | id                                                             | search_outcome               |
-|---------------:|:---------------------------------------------------------------|:-----------------------------|
-|          13908 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-3e6b80c7_18d52f29df9\_-14de | stream(s) found and measured |
 
 #### Multiple points
 
 ``` r
 # Calculate the length for multiple points.
-fps = bcdata::bcdc_query_geodata("pscis-assessments") |>
+fps = bcdata::bcdc_query_geodata(pscis_layer_id) |>
   bcdata::filter(ASSESSMENT_DATE > as.Date('2020-10-01') & ASSESSMENT_DATE < as.Date('2021-01-01')) |> 
   bcdata::collect()
 
@@ -182,23 +183,28 @@ upstream_lengths = fwa.connect::estimate_total_upstream_length(
   make_plot = F,
   save_plot = F
 )
-#> 11 points to assess...
+#> 
+#>  11 points to assess...
+#> Some barriers were within minimum separation distance (100m)
+#> First barrier in each "group" of proximal points retained. 
+#> Number of barriers reduced to 10
 
-knitr::kable(
-  upstream_lengths
-)
+upstream_lengths |> 
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry()
+#> # A tibble: 10 × 5
+#>    FUNDING_PROJECT        RESPONSIBLE_PARTY_NAME group_id total_length_m$total…¹
+#>  * <chr>                  <chr>                     <int>                  <dbl>
+#>  1 Elk River Watershed G… CANADIAN WILDLIFE FED…        1                   4336
+#>  2 Elk River Watershed G… CANADIAN WILDLIFE FED…        2                   3978
+#>  3 Elk River Watershed G… CANADIAN WILDLIFE FED…        3                   2450
+#>  4 Elk River Watershed G… CANADIAN WILDLIFE FED…        4                  31066
+#>  5 Elk River Watershed G… CANADIAN WILDLIFE FED…        5                   6784
+#>  6 Elk River Watershed G… CANADIAN WILDLIFE FED…        6                  18659
+#>  7 Elk River Watershed G… CANADIAN WILDLIFE FED…        7                   8672
+#>  8 Elk River Watershed G… CANADIAN WILDLIFE FED…        8                   9463
+#>  9 Elk River Watershed G… CANADIAN WILDLIFE FED…        9                  32738
+#> 10 Elk River Watershed G… CANADIAN WILDLIFE FED…       10                 111023
+#> # ℹ abbreviated name: ¹​total_length_m$total_length_m
+#> # ℹ 1 more variable: search_outcome <chr>
 ```
-
-| total_length_m | id                                                          | search_outcome               |
-|---------------:|:------------------------------------------------------------|:-----------------------------|
-|           4386 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24a | stream(s) found and measured |
-|          30012 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24b | stream(s) found and measured |
-|           8722 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24c | stream(s) found and measured |
-|           6834 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24d | stream(s) found and measured |
-|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24e | stream(s) found and measured |
-|          45787 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_24f | stream(s) found and measured |
-|           9512 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_250 | stream(s) found and measured |
-|           4272 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_251 | stream(s) found and measured |
-|           4028 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_252 | stream(s) found and measured |
-|            153 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_253 | stream(s) found and measured |
-|         111073 | WHSE_FISH.PSCIS_ASSESSMENT_SVW.fid-65d169d5_18d52f077c2_254 | stream(s) found and measured |

@@ -1,0 +1,146 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  include = TRUE,
+  warning = FALSE,
+  fig.width = 6,
+  fig.height = 5,
+  fig.align = 'center',
+  comment = "#>",
+  fig.path = "man/figures/README-"
+  )
+library(fwa.connect)
+```
+
+# fwa.connect
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![CRAN status](https://www.r-pkg.org/badges/version/fwa.connect)](https://CRAN.R-project.org/package=fwa.connect)
+<!-- badges: end -->
+
+Fwa.connect is intended to help users quickly identify patterns of connectivity between streams and lakes in the B.C. Data Catalogue's Freshwater Atlas (henceforth, 'FWA'). By providing a two-column data.table that lists up- and down-stream streams (identified by the FWA_WATERSHED_CODE field), a tidygraph network object, and some basic utility functions to work with upstream graphs of streams, {fwa.connect} will hopefully reduce workflow waiting times by eliminating the need to download the entirety of the FWA stream network or to perform laborious spatial operations to find connections between streams.
+
+## Installation
+
+You can install the development version of fwa.connect like so:
+
+``` r
+devtools::install_github('chrispmad/fwa.connect')
+# or 
+remotes::install_github('chrispmad/fwa.connect')
+```
+
+## Functions
+
+### Included dataset: fwa_up_and_downstream_tbl
+
+A two-column table from which an {igraph} / {tidygraph} graph object can be derived. The first column represents the FWA_WATERSHED_CODE (near-unique ID column) of a target stream in the FWA ('upstream_fwa_code'), the second represents the FWA_WATERSHED_CODE of the stream downstream of the target stream.
+```{r raw_data_table}
+knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl, 2))
+```
+
+### fwa_graph
+
+This function takes the included dataset described above and turns it into a {tidygraph} graph object.
+```{r fwa_graph}
+if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. 
+# Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
+```
+
+### trace_course_downstream
+
+Trace the course of flow downstream from the stream you identify with its FWA WATERSHED CODE id. This function returns an {sf} spatial table and an optional ggplot.
+```{r trace_course_downstream_eg}
+# An example FWA code.
+fwa_code = "200-948755-999851-274772-093336-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000"
+
+ds = fwa.connect::trace_course_downstream(fwa_code = fwa_code,
+                        merge_by_BLK = T,
+                        make_plot = T, 
+                        add_map_insert = T,
+                        save_plot = F,
+                        save_plot_location = NA)
+
+knitr::kable(head(ds$downstream_course, 2))
+
+ds$plot
+```
+
+### trace_course_upstream
+
+```{r trace_course_upstream_eg}
+# An example FWA code.
+fwa_code = "200-948755-999851-274772-093336-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000"
+
+us = fwa.connect::trace_course_upstream(fwa_code = fwa_code,
+                        merge_by_BLK = T,
+                        make_plot = T, 
+                        add_map_insert = T,
+                        save_plot = F,
+                        save_plot_location = NA)
+
+knitr::kable(head(us$upstream_streams, 2))
+
+us$plot
+```
+
+### estimate_total_upstream_length 
+
+Estimate the summed lengths of all streams above a certain point in space, e.g. a barrier to fish passage. This can be done for a single point or for an {sf} table of multiple points.
+
+#### Single point
+
+```{r est_length_single_point_example}
+# library(bcdata) # To access datasets in the open-source BC Data Catalogue
+# library(sf)
+# library(progress)
+
+# Download a possible fish barrier from the PSCIS dataset.
+
+# This is the code for pscis-assessments:
+pscis_layer_id = '7ecfafa6-5e18-48cd-8d9b-eae5b5ea2881'
+
+fp = bcdata::bcdc_query_geodata(pscis_layer_id) |> 
+  bcdata::filter(RESPONSIBLE_PARTY_NAME == 'WEST FRASER MILLS LTD.',
+         STREAM_NAME == 'Nass River',
+         ROAD_NAME == 'Warren Road') |>
+  bcdata::collect()
+
+# Find the nearest stream within 50 meters.
+stream = fwa.connect::find_nearest_stream(fp, max_buffer_dist = 50)
+
+# Calculate the summed length of all streams upstream from a point (or a FWA code)
+upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
+                                            make_plot = T,
+                                            save_plot = F)
+
+knitr::kable(
+  upstream_l 
+)
+```
+
+#### Multiple points
+
+```{r est_length_multiple_points_example}
+# Calculate the length for multiple points.
+fps = bcdata::bcdc_query_geodata(pscis_layer_id) |>
+  bcdata::filter(ASSESSMENT_DATE > as.Date('2020-10-01') & ASSESSMENT_DATE < as.Date('2021-01-01')) |> 
+  bcdata::collect()
+
+upstream_lengths = fwa.connect::estimate_total_upstream_length(
+  obstacles = fps,
+  make_plot = F,
+  save_plot = F
+)
+
+knitr::kable(
+  upstream_lengths
+)
+```

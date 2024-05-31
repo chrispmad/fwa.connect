@@ -1,0 +1,253 @@
+---
+title: "my_vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{my_vignette}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = F,
+  warning = F
+)
+
+```
+
+## Foreward
+
+This package, {fwa.connect}, is intended to make your life easier when working with the British Columbia Freshwater Atlas (FWA); specifically, the stream network line layer and the lakes layer. These layers (and perhaps others in the FWA) share a column: the FWA_WATERSHED_CODE. This column is quite ingenious, as it succinctly performs at least four functions:
+1. It serves as an (almost) unique ID column.
+2. For a given stream X, it describes how far down the 'receiving' stream Y the stream X joins onto stream Y.
+3. It implies how many streams or rivers away from the massive watershed scale collecting river a target stream is: e.g., a FWA code of 100-274173-283712-859301-000000... implies that our stream makes up a chain of four connected streams, including the massive collecting river (the '100', in this case).
+4. It can be used to generate a directed 'graph', which we can then use to quickly calculate useful graph attributes for each node (i.e. stream) in the graph, e.g. centrality, component membership (groups of nodes connected by at least one edge), betweenness, shortest path between two points, eccentricity, etc.
+
+## Grab Toy Dataset
+
+```{r get_toy_dataset}
+# ---------------
+# Get test points
+
+# Prince George Natural Resource District Polygon
+dpg = bcmaps::nr_districts() |>
+  dplyr::filter(ORG_UNIT_NAME == 'Prince George Natural Resource District')
+
+# Potential barriers to fish movement in streams
+fps_DPG = bcdata::bcdc_query_geodata("pscis-assessments") |>
+  bcdata::filter(INTERSECTS(dpg)) |>
+  bcdata::filter(ASSESSMENT_DATE > as.Date('2023-09-01') & ASSESSMENT_DATE < as.Date('2024-12-31')) |>
+  #bcdata::filter(CURRENT_BARRIER_RESULT_CODE = "BARRIER") |>
+  bcdata::collect()
+
+# Single barrier point
+fps_single = fps_DPG |>
+  dplyr::filter(STREAM_CROSSING_ID == 198771)
+
+# Multiple (N = 100) barrier points
+fps_multi = sample(fps_DPG, size = 20, replace = F)
+```
+
+## Functions
+
+The principle functions of the {fwa.connect} package are as follows:
+
+### 1. FWA network graph object (*fwa_graph*)
+
+- packages the FWA stream network as a {tidygraph} graph object, i.e. a table of node data (streams, in this case; N = 1,523,261) and a table of edge data (connections between nodes; N = 1,522,833). This graph supports many subsequent functions and can be used by any savvy analyst that knows the basics of {igraph} and/or {tidygraph}.
+
+```{r}
+fwa_graph()
+```
+
+### 2. Delineate Component Groups (*delineate_comps*)
+
+- Identifies the component membership of one or more FWA_WATERSHED_CODEs.
+
+```{r delineate_comps_example}
+# Just to ensure we have streams that are part of different groups, let's snag the geometries of three different streams around the province.
+stream_network_id = '92344413-8035-4c08-b996-65a9b3f62fca'
+
+some_streams = bcdata::bcdc_query_geodata(stream_network_id) |> 
+  bcdata::filter(GNIS_NAME %in% c("Paul River","Spius Creek","Taku River")) |> 
+  bcdata::collect()
+
+some_streams = delineate_comps(some_streams)
+
+library(ggplot2)
+
+ggplot() + 
+  geom_sf(data = bcmaps::bc_bound()) +
+  geom_sf(data = some_streams, aes(col = comp_group, fill = comp_group)) + 
+  ggthemes::theme_map() + 
+  labs(title = 'These three streams are part of separate graph components')
+```
+
+### 3. Find Nearest Stream (*find_nearest_stream*)
+
+- Finds the nearest stream for an {sf} POINT simple feature collection of 1 or more features.
+
+```{r nearest_stream_single_point_example}
+# Add FWA_WATERSHED_CODE to table of points and also return stream geometries
+fps_single_l = find_nearest_stream(fps_single)
+
+# Unpack fps_DPG and streams
+fps_single_p = fps_single_l$points
+fps_single_s = fps_single_l$streams
+
+# How many barriers did we find a sufficiently close stream for?
+nrow(fps_single_p |>
+  dplyr::filter(!is.na(fwa_code)))
+
+# Geometry of nearest stream to obstacle.
+plot(fps_single_s$geometry)
+plot(fps_single_p$geometry, add = T, col = 'red', lwd = 3)
+
+```
+
+```{r nearest_stream_multi_point_example}
+# Add FWA_WATERSHED_CODE to table of points and also return stream geometries
+fps_multi_l = find_nearest_stream(fps_multi)
+
+# Unpack fps_DPG and streams
+fps_multi_p = fps_multi_l$points
+fps_multi_s = fps_multi_l$streams
+
+# How many barriers did we find a sufficiently close stream for?
+nrow(fps_multi_p |>
+  dplyr::filter(!is.na(fwa_code)))
+
+# Geometry of nearest stream to obstacle.
+plot(fps_multi_s$geometry)
+plot(fps_multi_p$geometry, add = T, col = 'red', lwd = 3)
+```
+
+### 3. Trace Course Downstream (*trace_course_downstream*)
+
+- Finds collecting streams downstream of one or more points or streams.
+
+```{r}
+minaker = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |> 
+  bcdata::filter(GNIS_NAME == 'Minaker River') |> 
+  bcdata::collect() |> 
+  sf::st_zm() |> 
+  dplyr::group_by(GNIS_NAME, BLUE_LINE_KEY, FWA_WATERSHED_CODE) |> 
+  dplyr::summarise()
+
+trace_course_downstream(
+  minaker$FWA_WATERSHED_CODE,
+  make_plot = T,
+  add_map_insert = T
+)
+
+# Not working for multiple points yet.
+# trace_course_downstream(
+#   fps_multi_p$fwa_code,
+#   make_plot = T
+# )
+```
+
+### 4. Trace Course Upstream (*trace_course_upstream*)
+
+- Finds all streams upstream of one or more streams. Optional ggplot that shows the submitted streams in dark blue. Optional merging of streams in output table by BLUE_LINE_KEY and a handful of other columns.
+
+```{r}
+# Single point
+fps_s_upstr = trace_course_upstream(
+  fps_single_s$FWA_WATERSHED_CODE,
+  make_plot = T,
+  add_map_insert = T
+)
+
+fps_s_upstr$plot
+
+# Multiple points
+fps_m_upstr = trace_course_upstream(
+  fps_multi_s$FWA_WATERSHED_CODE,
+  make_plot = T,
+  add_map_insert = T
+)
+
+fps_m_upstr$plot
+```
+
+### 5. Clip away streams downstream of point(s) (*clip_away_downstream*)
+
+- Removes streams downstream from point(s)
+
+```{r}
+fps_s_upstr_clipped = clip_away_downstream(fps_single_p,
+                     fps_s_upstr$upstream_streams)
+
+ggplot() + 
+  geom_sf(data = fps_s_upstr$upstream_streams, color = 'grey') + 
+  geom_sf(data = fps_s_upstr_clipped, color = 'orange') + 
+  geom_sf(data = fps_single_p, col = 'red')
+
+# Still working on this vectorized form of the clip away function.
+fps_m_upstream_clipped = clip_away_downstream(
+  fps_m_upstr$upstream_streams,
+  fps_multi_p
+  )
+
+# Check out an example area with multiple potential stream obstacles.
+ggplot() + 
+  geom_sf(data = fps_m_upstr$upstream_streams, color = 'grey') + 
+  geom_sf(data = fps_m_upstream_clipped, color = 'orange') + 
+  geom_sf(data = fps_multi_p, col = 'red') +
+    ggplot2::coord_sf(xlim = c(1205291,1220000),
+                      ylim = c(1080000,1095000))
+
+# Double check that we're getting the same result as the individual point test.
+ggplot() + 
+  geom_sf(data = fps_m_upstr$upstream_streams, color = 'grey') + 
+  geom_sf(data = fps_m_upstream_clipped, color = 'orange') + 
+  geom_sf(data = fps_multi_p, col = 'red') +
+    ggplot2::coord_sf(xlim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(1,3)],
+                      ylim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(2,4)])
+```
+
+```{r}
+# fps_stream_matched = fps_single |> 
+#   find_nearest_stream()
+#   
+# fps_stream_matched |> 
+#   trace_course_upstream() |> 
+#   clip_away_downstream(fps_stream_matched$points) |> 
+#   dplyr::mutate(indiv_l = as.numeric(sf::st_length(geometry))) |>
+#   sf::st_drop_geometry() |> 
+#   dplyr::summarise(total_upstr_len_m = sum(indiv_l))
+```
+
+
+### 6. Estimate Upstream Stream Length (*estimate_total_upstream_length()*)
+
+Use the estimate function for a single barrier:
+
+```{r, fig.width=6, fig.height=6}
+test = fwa.connect::estimate_total_upstream_length(
+  fps_DPG[1,],
+  make_plot = T,
+  stream_snap_dist = 80,
+  min_obstacles_separation = 40
+)
+
+test$total_length_m
+```
+
+Or use the estimate function for multiple barriers in one function call
+
+```{r}
+test = estimate_total_upstream_length(
+  fps_DPG[c(1:10),],
+  make_plot = F,
+  stream_snap_dist = 80,
+  min_obstacles_separation = 40
+)
+
+test$total_length_m
+```

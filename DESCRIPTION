@@ -1,0 +1,31 @@
+Package: fwa.connect
+Title: Simplify Stream Network Analyses
+Version: 0.0.0.9000
+Authors@R: 
+    person("Chris", "Madsen", email = "chris.madsen@bc.gov.ca", role = c("aut", "cre"))
+Description: This package contains a large data file that describes a 2-columned table that identifies streams using the FWA_WATERSHED_CODE field from the BC Data Catalogue's Freshwater Atlas. One column indicates upstream and the other downstream streams.
+License: MIT + file LICENSE
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+URL: https://github.com/chrispmad/fwa.connect
+BugReports: https://github.com/chrispmad/fwa.connect/issues
+Depends: 
+    R (>= 2.10)
+LazyData: true
+Imports: 
+    bcdata,
+    bcmaps,
+    data.table,
+    igraph,
+    patchwork,
+    progress,
+    tidygraph
+Enhances: 
+    plotly
+VignetteBuilder: knitr

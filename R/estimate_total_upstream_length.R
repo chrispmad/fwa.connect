@@ -41,7 +41,9 @@ estimate_total_upstream_length = function(obstacles = NULL,
   obstacles_reduced = sf::st_join(obstacles, obstacles_b) |>
     dplyr::group_by(group_id) |>
     dplyr::mutate(obstacle_id = dplyr::row_number()) |>
-    dplyr::slice_min(obstacle_id)
+    dplyr::slice_min(obstacle_id) |>
+    dplyr::ungroup() |>
+    dplyr::select(-group_id)
 
   if(nrow(obstacles) > nrow(obstacles_reduced)){
     cat(paste0('\nSome barriers were within minimum separation distance (',
@@ -163,7 +165,7 @@ estimate_total_upstream_length = function(obstacles = NULL,
       length_measure = upstream_network |>
         sf::st_drop_geometry() |>
         dplyr::summarise(total_length_m = round(sum(LENGTH_METRE,na.rm=T),0)) |>
-        dplyr::select(total_length_m)
+        dplyr::pull(total_length_m)
 
       # output = length_measure
     }
@@ -258,5 +260,6 @@ estimate_total_upstream_length = function(obstacles = NULL,
   }
   # Bind list into single table
   output = dplyr::bind_rows(output_l)
+
   return(output)
 }

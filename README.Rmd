@@ -116,8 +116,9 @@ upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
                                             save_plot = F)
 
 upstream_l |> 
-  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
-  sf::st_drop_geometry()
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry() |> 
+  knitr::kable()
 ```
 
 #### Multiple points
@@ -135,6 +136,7 @@ upstream_lengths = fwa.connect::estimate_total_upstream_length(
 )
 
 upstream_lengths |> 
-  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
-  sf::st_drop_geometry()
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry() |> 
+  knitr::kable()
 ```

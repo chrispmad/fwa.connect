@@ -17,7 +17,8 @@ test_1 = estimate_total_upstream_length(
   fp,
   make_plot = F,
   stream_snap_dist = 80,
-  min_obstacles_separation = 40)
+  min_obstacles_separation = 40
+)
 
 test_2 = estimate_total_upstream_length(
   fps_DPG[c(1:10),],
@@ -28,14 +29,14 @@ test_2 = estimate_total_upstream_length(
 
 test_that("function returns expected result for specific fish passage barrier", {
   expect_equal(
-    unname(as.vector(test_1$total_length_m))[[1]],
+    test_1$total_length_m,
     13859
   )
 })
 
 test_that("function returns expected results for multiple fish passage barriers", {
   expect_equal(
-    unname(as.vector(test_2$total_length_m))[[1]],
+    test_2$total_length_m,
     c(22564, 3378, NA, 288, 420, 2336, 37498)
   )
 })

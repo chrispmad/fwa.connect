@@ -87,7 +87,7 @@ knitr::kable(head(ds$downstream_course, 2))
 
 | WATERSHED_GROUP_ID | BLUE_LINE_KEY | WATERSHED_KEY | FWA_WATERSHED_CODE                                                                                                                              | WATERSHED_GROUP_CODE | GNIS_ID | GNIS_NAME   | LEFT_RIGHT_TRIBUTARY | BLUE_LINE_KEY_50K | WATERSHED_CODE_50K                            | WATERSHED_KEY_50K | WATERSHED_GROUP_CODE_50K | GRADIENT | LENGTH_METRE | DOWNSTREAM_ROUTE_MEASURE | STREAM_MAGNITUDE | STREAM_ORDER | geometry                     |
 |:-------------------|:--------------|:--------------|:------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------|:--------|:------------|:---------------------|:------------------|:----------------------------------------------|:------------------|:-------------------------|:---------|-------------:|-------------------------:|-----------------:|-------------:|:-----------------------------|
-| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | 541               | 230000000000000000000000000000000000000000000 | 541               | LPCE                     | NA       |  53153.94676 |                  1584684 |           198320 |            9 | MULTILINESTRING ((1336501 1… |
+| 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | 541               | 230000000000000000000000000000000000000000000 | 541               | LPCE                     | NA       |  53153.94676 |                  1584684 |           198320 |            9 | MULTILINESTRING ((1336075 1… |
 | 117                | 359572348     | 359572348     | 200-948755-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | LPCE                 | 14619   | Peace River | LEFT                 | NA                | NA                                            | NA                | NA                       | NA       |     53.26028 |                  1584865 |           157451 |            9 | LINESTRING (1324634 1253054… |
 
 ``` r
@@ -160,15 +160,14 @@ upstream_l = fwa.connect::estimate_total_upstream_length(obstacles = fp,
 ``` r
 
 upstream_l |> 
-  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
-  sf::st_drop_geometry()
-#> # A tibble: 1 × 5
-#>   FUNDING_PROJECT         RESPONSIBLE_PARTY_NAME group_id total_length_m$total…¹
-#> * <chr>                   <chr>                     <int>                  <dbl>
-#> 1 2008 Upper Nass RiverW… WEST FRASER MILLS LTD.        1                  13859
-#> # ℹ abbreviated name: ¹​total_length_m$total_length_m
-#> # ℹ 1 more variable: search_outcome <chr>
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry() |> 
+  knitr::kable()
 ```
+
+| FUNDING_PROJECT                                                | RESPONSIBLE_PARTY_NAME | total_length_m | search_outcome               |
+|:---------------------------------------------------------------|:-----------------------|---------------:|:-----------------------------|
+| 2008 Upper Nass RiverWatershed Fish Barrier Assessment Project | WEST FRASER MILLS LTD. |          13859 | stream(s) found and measured |
 
 #### Multiple points
 
@@ -190,21 +189,20 @@ upstream_lengths = fwa.connect::estimate_total_upstream_length(
 #> Number of barriers reduced to 10
 
 upstream_lengths |> 
-  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,group_id,total_length_m,search_outcome) |> 
-  sf::st_drop_geometry()
-#> # A tibble: 10 × 5
-#>    FUNDING_PROJECT        RESPONSIBLE_PARTY_NAME group_id total_length_m$total…¹
-#>  * <chr>                  <chr>                     <int>                  <dbl>
-#>  1 Elk River Watershed G… CANADIAN WILDLIFE FED…        1                   4336
-#>  2 Elk River Watershed G… CANADIAN WILDLIFE FED…        2                   3978
-#>  3 Elk River Watershed G… CANADIAN WILDLIFE FED…        3                   2450
-#>  4 Elk River Watershed G… CANADIAN WILDLIFE FED…        4                  31066
-#>  5 Elk River Watershed G… CANADIAN WILDLIFE FED…        5                   6784
-#>  6 Elk River Watershed G… CANADIAN WILDLIFE FED…        6                  18659
-#>  7 Elk River Watershed G… CANADIAN WILDLIFE FED…        7                   8672
-#>  8 Elk River Watershed G… CANADIAN WILDLIFE FED…        8                   9463
-#>  9 Elk River Watershed G… CANADIAN WILDLIFE FED…        9                  32738
-#> 10 Elk River Watershed G… CANADIAN WILDLIFE FED…       10                 111023
-#> # ℹ abbreviated name: ¹​total_length_m$total_length_m
-#> # ℹ 1 more variable: search_outcome <chr>
+  dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,total_length_m,search_outcome) |> 
+  sf::st_drop_geometry() |> 
+  knitr::kable()
 ```
+
+| FUNDING_PROJECT                                               | RESPONSIBLE_PARTY_NAME       | total_length_m | search_outcome               |
+|:--------------------------------------------------------------|:-----------------------------|---------------:|:-----------------------------|
+| Elk River Watershed Group Fish Passage Assessments - Phase 2  | CANADIAN WILDLIFE FEDERATION |           4336 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |           3978 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |           2450 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |          31066 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |           6784 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 2  | CANADIAN WILDLIFE FEDERATION |          18659 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 2  | CANADIAN WILDLIFE FEDERATION |           8672 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |           9463 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |          32738 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |         111023 | stream(s) found and measured |

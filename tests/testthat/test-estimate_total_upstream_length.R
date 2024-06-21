@@ -11,13 +11,16 @@ dpg = bcmaps::nr_districts() |>
 fps_DPG = bcdata::bcdc_query_geodata('7ecfafa6-5e18-48cd-8d9b-eae5b5ea2881') |>
   bcdata::filter(INTERSECTS(dpg)) |>
   bcdata::filter(ASSESSMENT_DATE > as.Date('2023-09-01') & ASSESSMENT_DATE < as.Date('2024-12-31')) |>
-  bcdata::collect()
+  bcdata::collect() #|>
+  # dplyr::filter(BARRIER_RESULT_CODE != 'PASSABLE')
 
 test_1 = estimate_total_upstream_length(
   fp,
   make_plot = F,
   stream_snap_dist = 80,
-  min_obstacles_separation = 40
+  min_obstacles_separation = 40,
+  save_plot = TRUE,
+  save_plot_location = 'C:/Users/CMADSEN/Downloads'
 )
 
 test_2 = estimate_total_upstream_length(

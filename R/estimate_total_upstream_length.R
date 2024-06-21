@@ -1,10 +1,12 @@
 #' Estimate the total length (in meters) of stream upstream of a spatial point or stream (identified by FWA_WATERSHED_CODE)
 #'
-#' @param point An {sf} table that describes one or more points that intersect with streams in B.C.
-#' @param fwa_code A character string, or vector of character strings, that are FWA_WATERSHED_CODES (consult Freshwater Atlas User Guide if this is unfamiliar to you)
+#' @param obstacles Table of {sf} POINT geometry obstacles to, e.g., fish passage
+#' @param stream_snap_dist How far, in meters, to look for the nearest stream to each obstacle
 #' @param keep_streams_separate If true, result table retains streams as rows and just adds a new column that is total length (in m); if false, just returns estimate length.
 #' @param make_plot If true, will make a simple ggplot figure.
+#' @param save_plot Should we save the plot to your local machine?
 #' @param save_plot_location Where to save the above plot to?
+#' @param min_obstacles_separation Merge obstacles within X meters
 #'
 #' @return The total length of streams upstream of a point or stream; if a point is used, the portion of the stream it rests on will be added to this estimate.
 #' @export
@@ -12,9 +14,8 @@
 #' @examples \dontrun
 
 estimate_total_upstream_length = function(obstacles = NULL,
-                                          # fwa_code = NULL,
                                           stream_snap_dist = 50,
-                                          min_obstacles_separation = 100,
+                                          min_obstacles_separation = 0.1,
                                           keep_streams_separate = F,
                                           make_plot = F,
                                           save_plot = F,

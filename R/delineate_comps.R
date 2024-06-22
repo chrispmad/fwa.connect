@@ -8,7 +8,9 @@
 #' @examples \dontrun
 delineate_comps = function(wbs){
 
-  gr = fwa_graph()
+  gr = stream_conn_tbl()
+
+  gr = tidygraph::as_tbl_graph(gr)
 
   comps = igraph::components(gr |> dplyr::filter(name %in% wbs$FWA_WATERSHED_CODE))
 

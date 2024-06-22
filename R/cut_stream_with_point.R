@@ -17,6 +17,7 @@ cut_stream_with_point = function(point, obstructed_stream, buffer_point_amount =
     # Point and stream do not overlap. Find nearest points.
     p_s_nearest_points = sf::st_buffer(sf::st_nearest_points(point, obstructed_stream), buffer_point_amount)
     # stream_split = suppressWarnings(sf::st_difference(obstructed_stream, p_s_nearest_points))
+    # browser()
     obstructed_stream_cut = sf::st_difference(obstructed_stream, p_s_nearest_points) |>
       dplyr::select(FWA_WATERSHED_CODE, BLUE_LINE_KEY)
   } else {

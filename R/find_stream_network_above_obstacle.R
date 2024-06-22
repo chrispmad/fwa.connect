@@ -5,7 +5,7 @@ find_stream_network_above_obstacle = function(stream_split, stream_dl){
 
   dn_fwa = stringr::str_replace(the_fwa, '[0-9]{6}-(?=000000)', '000000-')
 
-  dn = bcdata::bcdc_query_geodata('freshwater-atlas-stream-network') |>
+  dn = bcdata::bcdc_query_geodata('92344413-8035-4c08-b996-65a9b3f62fca') |>
     bcdata::filter(FWA_WATERSHED_CODE == dn_fwa) |>
     bcdata::collect() |>
     sf::st_zm() |>

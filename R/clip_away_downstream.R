@@ -39,7 +39,7 @@ clip_away_downstream = function(stream_networks,points){
   # Do the points already have FWA codes? If so, could just cut the
   # stream that matches the FWA code. This could avoid messy network
   # Use the obstacle point(s) to split the obstructed stream into two pieces.
-  stream_networks_cut = cut_stream_with_point(points, stream_networks)
+  stream_networks_cut = cut_stream_with_point(stream_networks, points)
 
   # stream_networks_cut = sf::st_as_sf(stream_networks_cut)
   # stream_networks_cut = dplyr::rename(stream_networks_cut, geometry = x)

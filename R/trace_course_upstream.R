@@ -30,7 +30,7 @@ trace_course_upstream = function(fwa_code,
   fwa_code_trunc = sub(x = fwa_code, pattern = '000000.*', replacement = '')
 
   #Download all streams upstream from point
-  cql_pattern = paste0("FWA_WATERSHED_CODE like '",fwa_code_trunc,"%'")
+  cql_pattern = paste0(paste0("FWA_WATERSHED_CODE like '",fwa_code_trunc,"%'"), collapse = ' OR ')
 
   # If cql pattern is NULL, skip to next iteration; otherwise,
   # this function would attempt to download the whole stream network!

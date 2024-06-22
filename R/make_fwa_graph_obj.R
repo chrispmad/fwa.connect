@@ -1,16 +1,24 @@
-#' Title Load the FWA stream tidy graph built on the FWA watershed code field.
+#' Download and load in the FWA stream connectivity table.
 #'
-#' @return Large tidygraph dataset of streams in British Columbia based on Freshwater Atlas.
+#' @return Table showing connectivity of streams in British Columbia based on the Freshwater Atlas Stream Network.
 #' @export
 #'
 #' @examples
-#' fwa_graph()
+#' str_tbl = stream_conn_tbl()
+#' str_tbl
 #'
-fwa_graph = function(){
-  # Read in .RDS file from package
-  fwa = fwa.connect::fwa_up_and_downstream_tbl
-  # Convert to igraph graph object.
-  fwa_graph = igraph::graph_from_data_frame(d = fwa)
-  # Convert to tidygraph
-  tidygraph::as_tbl_graph(fwa_graph)
+
+stream_conn_tbl = function(ask = interactive(), force = FALSE){
+  dir <- data_dir()
+  fpath <- file.path(dir, "freshwater-atlas-stream-connectivity.rds")
+  if (!file.exists(fpath) | force) {
+    check_write_to_data_dir(dir, ask)
+    url = "https://github.com/chrispmad/FWA_stream_data/raw/main/freshwater-atlas-stream-connectivity.rds"
+    download.file(url = url, destfile = fpath)
+    ret = readRDS(fpath)
+  }
+  else {
+    ret <- readRDS(fpath)
+  }
+  ret
 }

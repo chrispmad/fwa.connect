@@ -14,9 +14,11 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   message = F,
-  warning = F
+  warning = F,
+  fig.width = 8,
+  fig.height = 5
 )
-
+library(fwa.connect)
 ```
 
 ## Foreward
@@ -56,12 +58,16 @@ fps_multi = sample(fps_DPG, size = 20, replace = F)
 
 The principle functions of the {fwa.connect} package are as follows:
 
-### 1. FWA network graph object (*fwa_graph*)
+### 1. Freshwater Atlas Stream Network connectivity (*fwa_graph*)
 
-- packages the FWA stream network as a {tidygraph} graph object, i.e. a table of node data (streams, in this case; N = 1,523,261) and a table of edge data (connections between nodes; N = 1,522,833). This graph supports many subsequent functions and can be used by any savvy analyst that knows the basics of {igraph} and/or {tidygraph}.
+- packages the FWA stream network as a two-column table describing source and destination rivers/streams (N = 1,523,261). This can be easily converted into a {tidygraph} graph object, with a table of 1.5 million nodes and a table of edge data (connections between nodes; N = 1,522,833). This graph supports many subsequent functions and can be used by any savvy analyst that knows the basics of {igraph} and/or {tidygraph}.
 
 ```{r}
-fwa_graph()
+str_tbl = stream_conn_tbl()
+
+head(str_tbl)
+
+tidygraph::as_tbl_graph(str_tbl)
 ```
 
 ### 2. Delineate Component Groups (*delineate_comps*)
@@ -82,8 +88,7 @@ library(ggplot2)
 
 ggplot() + 
   geom_sf(data = bcmaps::bc_bound()) +
-  geom_sf(data = some_streams, aes(col = comp_group, fill = comp_group)) + 
-  ggthemes::theme_map() + 
+  geom_sf(data = some_streams, aes(col = comp_group, fill = comp_group)) +
   labs(title = 'These three streams are part of separate graph components')
 ```
 
@@ -175,79 +180,31 @@ fps_m_upstr = trace_course_upstream(
 fps_m_upstr$plot
 ```
 
-### 5. Clip away streams downstream of point(s) (*clip_away_downstream*)
 
-- Removes streams downstream from point(s)
-
-```{r}
-fps_s_upstr_clipped = clip_away_downstream(fps_single_p,
-                     fps_s_upstr$upstream_streams)
-
-ggplot() + 
-  geom_sf(data = fps_s_upstr$upstream_streams, color = 'grey') + 
-  geom_sf(data = fps_s_upstr_clipped, color = 'orange') + 
-  geom_sf(data = fps_single_p, col = 'red')
-
-# Still working on this vectorized form of the clip away function.
-fps_m_upstream_clipped = clip_away_downstream(
-  fps_m_upstr$upstream_streams,
-  fps_multi_p
-  )
-
-# Check out an example area with multiple potential stream obstacles.
-ggplot() + 
-  geom_sf(data = fps_m_upstr$upstream_streams, color = 'grey') + 
-  geom_sf(data = fps_m_upstream_clipped, color = 'orange') + 
-  geom_sf(data = fps_multi_p, col = 'red') +
-    ggplot2::coord_sf(xlim = c(1205291,1220000),
-                      ylim = c(1080000,1095000))
-
-# Double check that we're getting the same result as the individual point test.
-ggplot() + 
-  geom_sf(data = fps_m_upstr$upstream_streams, color = 'grey') + 
-  geom_sf(data = fps_m_upstream_clipped, color = 'orange') + 
-  geom_sf(data = fps_multi_p, col = 'red') +
-    ggplot2::coord_sf(xlim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(1,3)],
-                      ylim = sf::st_bbox(fps_s_upstr$upstream_streams)[c(2,4)])
-```
-
-```{r}
-# fps_stream_matched = fps_single |> 
-#   find_nearest_stream()
-#   
-# fps_stream_matched |> 
-#   trace_course_upstream() |> 
-#   clip_away_downstream(fps_stream_matched$points) |> 
-#   dplyr::mutate(indiv_l = as.numeric(sf::st_length(geometry))) |>
-#   sf::st_drop_geometry() |> 
-#   dplyr::summarise(total_upstr_len_m = sum(indiv_l))
-```
-
-
-### 6. Estimate Upstream Stream Length (*estimate_total_upstream_length()*)
+### 5. Estimate Upstream Stream Length (*estimate_total_upstream_length()*)
 
 Use the estimate function for a single barrier:
 
 ```{r, fig.width=6, fig.height=6}
-test = fwa.connect::estimate_total_upstream_length(
+obst_with_length = fwa.connect::estimate_total_upstream_length(
   fps_DPG[1,],
   make_plot = T,
   stream_snap_dist = 80,
   min_obstacles_separation = 40
 )
 
-test$total_length_m
+obst_with_length$total_length_m
 ```
 
 Or use the estimate function for multiple barriers in one function call
 
 ```{r}
-test = estimate_total_upstream_length(
+multi_obst_with_l = estimate_total_upstream_length(
   fps_DPG[c(1:10),],
   make_plot = F,
   stream_snap_dist = 80,
   min_obstacles_separation = 40
 )
 
-test$total_length_m
+multi_obst_with_l$total_length_m
 ```

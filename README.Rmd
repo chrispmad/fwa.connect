@@ -46,14 +46,6 @@ A two-column table from which an {igraph} / {tidygraph} graph object can be deri
 knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl, 2))
 ```
 
-### fwa_graph
-
-This function takes the included dataset described above and turns it into a {tidygraph} graph object.
-```{r fwa_graph}
-if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. 
-# Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
-```
-
 ### trace_course_downstream
 
 Trace the course of flow downstream from the stream you identify with its FWA WATERSHED CODE id. This function returns an {sf} spatial table and an optional ggplot.

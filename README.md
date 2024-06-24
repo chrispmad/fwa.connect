@@ -33,32 +33,22 @@ remotes::install_github('chrispmad/fwa.connect')
 
 ## Functions
 
-### Included dataset: fwa_up_and_downstream_tbl
+### Download dataset: stream_conn_tbl
 
-A two-column table from which an {igraph} / {tidygraph} graph object can
-be derived. The first column represents the FWA_WATERSHED_CODE
-(near-unique ID column) of a target stream in the FWA
+This function downloads a two-column table from which an {igraph} /
+{tidygraph} graph object can be derived. The first column represents the
+FWA_WATERSHED_CODE (near-unique ID column) of a target stream in the FWA
 (‘upstream_fwa_code’), the second represents the FWA_WATERSHED_CODE of
 the stream downstream of the target stream.
 
 ``` r
-knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl, 2))
+knitr::kable(head(fwa.connect::stream_conn_tbl(), 2))
 ```
 
 | upstream_fwa_code                                                                                                                               | downstream_fwa_code                                                                                                                             |
 |:------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------|
 | 100-000025-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
 | 100-000061-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 | 100-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000-000000 |
-
-### fwa_graph
-
-This function takes the included dataset described above and turns it
-into a {tidygraph} graph object.
-
-``` r
-if(FALSE) fwa.connect::fwa_graph() # tbl_graph with 1523261 nodes and 1522833 edges. 
-# Not sure how to display this in brief, so it's quarantined behind an 'if(FALSE)' statement for our safety!
-```
 
 ### trace_course_downstream
 
@@ -184,9 +174,6 @@ upstream_lengths = fwa.connect::estimate_total_upstream_length(
 )
 #> 
 #>  11 points to assess...
-#> Some barriers were within minimum separation distance (100m)
-#> First barrier in each "group" of proximal points retained. 
-#> Number of barriers reduced to 10
 
 upstream_lengths |> 
   dplyr::select(FUNDING_PROJECT,RESPONSIBLE_PARTY_NAME,total_length_m,search_outcome) |> 
@@ -197,6 +184,7 @@ upstream_lengths |>
 | FUNDING_PROJECT                                               | RESPONSIBLE_PARTY_NAME       | total_length_m | search_outcome               |
 |:--------------------------------------------------------------|:-----------------------------|---------------:|:-----------------------------|
 | Elk River Watershed Group Fish Passage Assessments - Phase 2  | CANADIAN WILDLIFE FEDERATION |           4336 | stream(s) found and measured |
+| Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |           4223 | stream(s) found and measured |
 | Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |           3978 | stream(s) found and measured |
 | Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |           2450 | stream(s) found and measured |
 | Elk River Watershed Group Fish Passage Assessments - Phase 1b | CANADIAN WILDLIFE FEDERATION |          31066 | stream(s) found and measured |

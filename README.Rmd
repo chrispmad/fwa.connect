@@ -39,11 +39,11 @@ remotes::install_github('chrispmad/fwa.connect')
 
 ## Functions
 
-### Included dataset: fwa_up_and_downstream_tbl
+### Download dataset: stream_conn_tbl
 
-A two-column table from which an {igraph} / {tidygraph} graph object can be derived. The first column represents the FWA_WATERSHED_CODE (near-unique ID column) of a target stream in the FWA ('upstream_fwa_code'), the second represents the FWA_WATERSHED_CODE of the stream downstream of the target stream.
+This function downloads a two-column table from which an {igraph} / {tidygraph} graph object can be derived. The first column represents the FWA_WATERSHED_CODE (near-unique ID column) of a target stream in the FWA ('upstream_fwa_code'), the second represents the FWA_WATERSHED_CODE of the stream downstream of the target stream.
 ```{r raw_data_table}
-knitr::kable(head(fwa.connect::fwa_up_and_downstream_tbl, 2))
+knitr::kable(head(fwa.connect::stream_conn_tbl(), 2))
 ```
 
 ### trace_course_downstream

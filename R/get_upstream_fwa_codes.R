@@ -10,6 +10,6 @@
 get_upstream_fwa_codes = function(fwa_code){
   requireNamespace(data.table)
   fwa_pattern = paste0(sub(x = fwa_code, pattern = '-000000.*', replacement = '-'),'.*')
-  rows_to_keep = data.table::`%like%`(fwa.connect::fwa_up_and_downstream_tbl$upstream_fwa_code, fwa_pattern)
-  tidyr::as_tibble(fwa.connect::fwa_up_and_downstream_tbl[rows_to_keep,1])
+  rows_to_keep = data.table::`%like%`(fwa.connect::stream_conn_tbl()$upstream_fwa_code, fwa_pattern)
+  tidyr::as_tibble(fwa.connect::stream_conn_tbl()[rows_to_keep,1])
 }

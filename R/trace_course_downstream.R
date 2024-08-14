@@ -56,6 +56,7 @@ trace_course_downstream = function(fwa_code,
 
   for(i in 1:num_st_con){
     print(paste0('working on stream juncture ',i,' of ',num_st_con))
+
     if(i == 1){
       dr_stream = target_stream
       dr_fwa_code = fwa_code_no_blanks
@@ -105,7 +106,7 @@ trace_course_downstream = function(fwa_code,
       # juncture with draining stream
 
       rec_stream = rec_stream |>
-        dplyr::filter(DOWNSTREAM_ROUTE_MEASURE <= downstream_cutoff_m) |>
+        # dplyr::filter(DOWNSTREAM_ROUTE_MEASURE <= downstream_cutoff_m) |>
         # Filter for rows where stream order is at least the max we've encountered so far
         # and the BLK is the same as the most numerous BLK (to trim away little single streams)
         # from a big river, OR rows that are 'lake-def skelet'.
@@ -122,6 +123,10 @@ trace_course_downstream = function(fwa_code,
       streams_dl = streams_dl + 1
     }
   }
+
+  # Eliminate any stream junction list elements that are blank!
+  downstream_course = downstream_course |>
+    vctrs::list_drop_empty()
 
   # Package up results
   downstream_course_b = dplyr::bind_rows(downstream_course)
